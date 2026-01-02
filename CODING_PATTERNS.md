@@ -322,22 +322,34 @@ This document provides proven coding patterns, best practices, and common use ca
 ```scheme
 ;; File: dom-utils.echo.glisp
 
-;; Query selector wrapper
+;; Security Note: These examples show basic patterns. In production code:
+;; - Validate selector inputs to prevent injection
+;; - Use parameterized js-eval calls when possible
+;; - Sanitize user-provided content before DOM insertion
+
+;; Query selector wrapper (for trusted selectors only)
 (define ($ selector)
+  ;; Production: Validate selector format
   (js-eval (string-append "document.querySelector('" selector "')")))
 
-;; Query all
-(define ($$ selector)
-  (js-eval (string-append "Array.from(document.querySelectorAll('" selector "'))")))
+;; Safer query selector using parameterized eval
+(define ($-safe selector)
+  (js-eval "document.querySelector(arguments[0])" selector))
 
-;; Create element
+;; Query all (safer parameterized version)
+(define ($$ selector)
+  (js-eval "Array.from(document.querySelectorAll(arguments[0]))" selector))
+
+;; Create element with safer attribute handling
 (define (create-element tag attrs children)
-  (let ((el (js-eval (string-append "document.createElement('" tag "')"))))
+  (let ((el (js-eval "document.createElement(arguments[0])" tag)))
     (for-each
       (lambda (attr)
-        (js-eval (string-append
-                   "arguments[0].setAttribute('" (car attr) "', '" (cdr attr) "')")
-                 el))
+        ;; Pass values as separate arguments to prevent injection
+        (js-eval "arguments[0].setAttribute(arguments[1], arguments[2])"
+                 el
+                 (car attr)
+                 (cdr attr)))
       attrs)
     (for-each
       (lambda (child)
@@ -528,9 +540,19 @@ This document provides proven coding patterns, best practices, and common use ca
 ```scheme
 ;; File: property-test.echo.scm
 
+;; Note: Uses EchoLisp-specific functions like 'iota' and 'random'.
+;; For portable code, implement these or use compatible alternatives.
+
 ;; Random generators
 (define (random-int min max)
   (+ min (random (- max min))))
+
+;; Helper: iota (if not available in your Scheme)
+(define (iota n)
+  (let loop ((i 0) (acc '()))
+    (if (>= i n)
+        (reverse acc)
+        (loop (+ i 1) (cons i acc)))))
 
 (define (random-list length generator)
   (map (lambda (_) (generator))

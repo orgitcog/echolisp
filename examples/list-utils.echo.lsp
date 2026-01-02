@@ -7,6 +7,9 @@
 ;; manipulation. Uses .echo.lsp extension for short
 ;; utility file.
 ;;
+;; Dependencies: Assumes EchoLisp environment with
+;; fold, length, and standard list functions.
+;;
 ;; ============================================
 
 ;; sum: list -> number
