@@ -1,0 +1,152 @@
+#|
+little calculator with  memory.
+arithmetic/complex/rational expressions in infix notation.
+
+http://www.codecodex.com/wiki/Recursive_descent_parsing
+
+spaces between operations !
+valid expressions :
+ 1 - 3
+ 3 / 12
+ 3 + &2 (memory cell 2)
+ 1 + (sin (log (PI))) * 3 + cos ((1 + 4) * (3 - 7))  
+ 1 + 10 !
+ PI + sqrt(-3)
+ 3 ** 3 or 4^5
+|#
+
+
+(define *sym* null);
+(define *tokens* null)
+
+
+;; (getsym) returns nopish
+;; sets *sym* end prepare *tokens* for next
+
+(define (getsym) (cond
+    ((not *tokens*) (throw 'c-error "missing something"))
+	((pair? *tokens*) ;; inside expression or  (sub-expr)
+		(set! *sym* (first *tokens*))
+;; (writeln 'getsym::  *sym*)
+		(set! *tokens* (cdr *tokens*)))
+
+	((null? *tokens*)  ;; end of sub-list
+		(set! *tokens* (pop 'tokstack)) ;; #f if empty
+		(set! *sym* null)) ;; signal end of (sub-expr)
+	(else (throw 'c-error "getsym::bad tokens"))))
+		
+;; (accept predicate)
+;; gets next *sym* : (getsym) and returns #t if accepted
+;; else nopish and returns #f
+(define (accept p) 
+		(when (p *sym*)
+			(when (eq? p pair?) (push 'tokstack  *tokens*) (set! *tokens* *sym*))
+			(getsym)
+			#t ))
+			
+;; (expect predicate)
+;; accepts and raise error if not accepted
+(define (expect s)
+		(or (accept s)  (throw 'c-error "unexpected symbol. " )))
+		
+		
+(define (c-check-val val)
+		(cond 
+			((number? val) val)
+			((eq? val #t) 1)
+			((eq? val #f) 0)
+			(else (writeln "calc:not a number:"  val) 0)))
+			
+;; (c-procedure proc) e.g (sin 6)
+;; check syntax proc(expression)
+;; returns val : must be number?
+
+(define (c-procedure proc (val 0))
+		(expect pair?)
+		(set! val (proc (c-expression)))
+		(expect null?)
+		(c-check-val val))
+		
+
+;; c-bottom :accepts symbols : PI, &i
+;; accepts command symbols
+;; remove reader-proc if quit command
+
+(define (c-symbol val)
+	(cond
+	((bound? val) (c-check-val (eval val)))
+	((eq? val '$) (reader-rem-proc) (writeln "calc:quit") 0)
+	(else (writeln "📱 calc:unknown symbol:" val) 0)))
+	
+;; accepts terminals : numbers, symb, proc call, sub-expr
+;; return val
+(define (c-bottom (val 0) (op 0))
+	(set! val *sym*)
+	(cond 
+		((accept number?) val)
+		((accept procedure?) (c-procedure val))
+		((accept symbol?)  (c-symbol val)) ;; (eval val))
+		((accept pair?) (set! val (c-expression)) (expect null?) val)
+		(else (throw 'c-error "factor: syntax error. "))))
+	
+	
+;; c-factor :: accepts bottom [!] || bottom ** bottom **  .. [!]
+;; returns val
+(define (c-factor (val 0))
+	(set! val (c-bottom))
+	(while (memq *sym* '( ** ^ ))
+		(getsym)
+		(set! val (expt val (c-bottom))))
+	(when (eq? *sym* '!) (set! val (factorial val)) (getsym))
+	val)
+
+
+;;c-term :  accepts factor [*|/|//] factor [*|/|//] factor ...
+;; return val
+(define (c-term (val 0) (op 0))  
+    (set! val (c-factor)) 
+   	(while  (memq *sym* '(* / //))
+   		(set! op *sym*)
+    	(getsym)
+    	(set! val (op  val (c-factor))))
+  ;;  (writeln 'c-term val)
+    val)
+
+;; c-expression : accepts [+|-]  term [+|-] term [+|-] term  ...
+;; return val
+(define  (c-expression  (val 0) (op '+))
+	(when (memq *sym* '(+ -))
+		(set! op *sym*)
+		(getsym))
+		
+	(set! val (op (c-term)))
+	
+    (while  (memq *sym* '(+ -))
+    	(set! op *sym*)
+    	(getsym)
+    	(set! val (op val (c-term))))
+;;  (writeln 'c-expr val)
+    val)
+
+;; install calc-proc
+(define (calc)
+	(reader-set-proc! calc-proc "📱 calc expression here - $ to quit -"))
+
+;;  accepts expression
+;;  *sym* = null     *tokens* = #f    at end iff well formed input
+(define (calc-proc tokens)
+(string-delimiter "")
+		(let ((val 0))
+			(set! *tokens* tokens)
+			(stack 'tokstack)
+;; (if *c-trace* (writeln 'calc:input: tokens))
+			(try 
+				(getsym)
+				(set! val (c-expression))
+				(catch (c-error c-message)
+					(printf "📱 calc:error: %s last-read: %s" c-message *sym* ) 0))
+			
+	(list val))) ;; // must return a list, or #f to terminate
+	
+(display "usage: (calc)" "color:green")
+		

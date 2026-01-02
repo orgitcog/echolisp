@@ -1,0 +1,37 @@
+# EchoLisp Repository .gitignore
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Download artifacts
+echolisp.zip
+*.zip.tmp
+
+# Node modules (if any tooling is added)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build artifacts (if any build process is added)
+dist/
+build/
+.cache/
+
+# Test coverage
+coverage/
+.nyc_output/

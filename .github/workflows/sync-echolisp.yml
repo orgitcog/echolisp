@@ -1,0 +1,121 @@
+name: Sync EchoLisp Content
+
+on:
+  workflow_dispatch:  # Allow manual trigger
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday at midnight UTC
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      
+      - name: Check if content already exists
+        id: check_content
+        run: |
+          if [ -f "index.html" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "EchoLisp content already exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "EchoLisp content not found"
+          fi
+      
+      - name: Download EchoLisp
+        if: steps.check_content.outputs.exists == 'false'
+        run: |
+          echo "Attempting to download echolisp.zip..."
+          
+          # Try primary URL
+          if curl -f -L --connect-timeout 30 --max-time 300 \
+            http://www.echolalie.org/echolisp/echolisp.zip \
+            -o echolisp.zip 2>&1 | tee download.log; then
+            echo "Download successful from primary source"
+          else
+            echo "Primary source failed, trying without www..."
+            if curl -f -L --connect-timeout 30 --max-time 300 \
+              http://echolalie.org/echolisp/echolisp.zip \
+              -o echolisp.zip 2>&1 | tee download.log; then
+              echo "Download successful from alternate source"
+            else
+              echo "Download failed from all sources"
+              cat download.log
+              exit 1
+            fi
+          fi
+          
+          # Verify the downloaded file
+          if [ -f "echolisp.zip" ] && [ -s "echolisp.zip" ]; then
+            echo "File downloaded successfully"
+            ls -lh echolisp.zip
+          else
+            echo "Downloaded file is empty or missing"
+            exit 1
+          fi
+      
+      - name: Extract EchoLisp
+        if: steps.check_content.outputs.exists == 'false'
+        run: |
+          echo "Extracting echolisp.zip..."
+          unzip -q echolisp.zip
+          
+          # Move files from extracted directory if they're in a subdirectory
+          if [ -d "echolisp" ]; then
+            echo "Moving files from echolisp/ directory..."
+            mv echolisp/* .
+            rmdir echolisp
+          fi
+          
+          # Clean up
+          rm echolisp.zip
+          
+          echo "Extraction complete. Repository contents:"
+          ls -la
+      
+      - name: Update README with success status
+        if: steps.check_content.outputs.exists == 'false'
+        run: |
+          # Update README to remove the status note about inaccessibility
+          if grep -q "currently not accessible" README.md; then
+            sed -i '/\*\*Note\*\*: The repository content initialization is pending/d' README.md
+            echo "Updated README.md"
+          fi
+      
+      - name: Commit and push changes
+        if: steps.check_content.outputs.exists == 'false'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          git add .
+          
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Sync EchoLisp content from official source
+            
+            Downloaded and extracted echolisp.zip from http://www.echolalie.org/echolisp/
+            Content is now available for offline use."
+            
+            git push
+            echo "Changes pushed successfully"
+          fi
+      
+      - name: Summary
+        if: always()
+        run: |
+          if [ "${{ steps.check_content.outputs.exists }}" == "true" ]; then
+            echo "✅ EchoLisp content already exists in repository"
+          elif [ -f "index.html" ]; then
+            echo "✅ Successfully synced EchoLisp content"
+          else
+            echo "❌ Failed to sync EchoLisp content"
+            echo "The echolalie.org site may be temporarily unavailable"
+          fi

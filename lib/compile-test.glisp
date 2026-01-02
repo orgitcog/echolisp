@@ -1,0 +1,42 @@
+#|
+compile unit tests
+|#
+(require 'compile)
+
+(define S (stack 'S))
+(define (s op (val 666)) 
+	(cond
+	((= op 0) (push S val))
+	((= op 1) (pop S))
+	((= op 2) (stack-top S))
+	((= op 3) (stack-empty? S))
+	((= op 4) (stack-length S))
+	((= op 5) (stack->list S))
+	(else (writeln "0:push 1:pop 2:top 3:empty? 4:length 5:->list"))))
+	
+(compile 's "-v")
+
+(define H (make-heap >)) ;; max heap
+(define (h op (val 666)) 
+	(cond
+	((= op 0) (heap-push H val))
+	((= op 1) (heap-pop H))
+	((= op 2) (heap-top H))
+	((= op 3) (heap-empty? H))
+	((= op 4) (heap-length H))
+	((= op 5) (heap->list H))
+	(else (writeln "0:push 1:pop 2:top 3:empty? 4:length 5:->list"))))
+	
+(compile 'h "-v")
+
+(define (l  op a (b #t) (c #t)) ; // logical
+	(cond
+	((= op 0) (or a b))
+	((= op 1) (or a b c))
+	((= op 2) (and a b))
+	((= op 3) (and a b c))
+	((= op 4) (xor a b))
+	(else (writeln "0:(or a b) 1:(or a b c) 2:(and a b) 3:(and a b c) 4:(xor a b)"))))
+	
+(compile 'l "-v")
+	

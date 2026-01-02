@@ -1,0 +1,213 @@
+
+/*---------------------------------------------------
+vector operations
+--------------------------------------------------------*/
+#include <stdio.h>
+#include <locale.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <string.h>
+#include <ctype.h>
+#include "gbcalc.h"
+#include "gmp.h"
+#include "vector.h"
+
+
+
+/*===========
+Combinations
+==================*/
+
+/* Algorithm by Donald Knuth. */
+/* C implementation by Glenn C. Rhoads */
+/* C(n,k) - minimal exchange order */
+/* http://remus.rutgers.edu/~rhoads */
+
+
+static	int i, j, k, n, *c;	// memory for combination C(n,k)
+
+static	void	c_init(void)
+{
+if(c) free(c);
+    c = malloc( (k+3) * sizeof(int));
+    
+    for (i=1; i <= k; i++) c[i] = i;
+    c[k+1] = n+1;
+    j = k;
+} // c_init
+
+/*---------------------------------------------------------------------------
+mpv_comb_next
+returns 0 when finished
+----------------------------------------------------------------------------*/
+extern	int	zm_getlinenum(void);
+int	mpv_comb_next(mpv_t rop, mpv_t op)
+{
+
+if(c == NULL) return 0;
+if(rop == op)
+errexit("comb::next",zm_getlinenum(),RUN_ERROR_NORESULT,"cannot use same vector",NULL);
+if(rop->type != op->type)
+errexit("comb::next",zm_getlinenum(),RUN_ERROR_NORESULT,"vectors must be of same type",NULL);
+
+//
+//    for (i=k; i >= 1; i--) printf( "%3d", c[i]);
+//    printf( "\n");
+//
+mpv_set_dim(rop,k);
+
+for(i=k ; i >= 1; i--)
+switch(op->type)
+{
+case UINT_TYP : rop->dat.uitem[i-1] = op->dat.uitem[c[i]-1]; break;
+case MPZ_TYP : mpz_set(rop->dat.zitem[i-1],op->dat.zitem[c[i]-1]); break;
+case MPF_TYP : mpf_set(rop->dat.fitem[i-1],op->dat.fitem[c[i]-1]); break;
+case MPQ_TYP : mpq_set(rop->dat.qitem[i-1],op->dat.qitem[c[i]-1]); break;
+default : assert(0);
+}
+
+    if (k&1)
+       {
+       if (c[1] + 1 < c[2]) {c[1] += 1; return 1;}
+       else j = 2;
+       }
+    else
+       {
+       if (c[1] > 1) {c[1] -= 1; return 1;}
+       else j = 2;
+       goto R5;
+       }
+
+ R4:
+    if (c[j] >= j+1)
+       {
+       c[j] = c[j-1];
+       c[j-1] = j-1;
+       return 1;
+       }
+    j++;
+
+ R5:
+    if (c[j]+1 < c[j+1])
+       {
+       c[j-1] = c[j];
+       c[j] += 1;
+       return 1;
+       }
+    j++;
+    if (j <= k) goto R4;
+
+free(c);
+c = NULL;
+return 1;	// last
+} // mpv_comb_next
+
+/*----------------------------------------------------------------
+mpv_comb_init
+
+------------------------------------------------------------------*/
+extern	int	zm_getlinenum(void);
+
+void	mpv_comb_init( mpv_t op,  int n_init, int k_init)
+{
+//int last  = mpv_get_last(op);
+n = n_init;
+k = k_init;
+if(n > op->alloc) n= op->alloc;
+
+if( k > n)
+errexit("comb",zm_getlinenum(),RUN_ERROR_INVALID_ARGUMENT,"vcomb::(n,k) k must be <= n",NULL);
+
+c_init();
+} // mpv_comb_init
+
+
+
+/*----------------------------------------------------------------
+mpv_perm_init
+
+------------------------------------------------------------------*/
+#define PLIMIT 100
+static int N; // perm vector lg
+static int PIndex[PLIMIT+2]; // 100! is enough
+static int PMore;
+
+void	mpv_perm_init(mpv_t op,  int n_init)
+{
+N = n_init;
+if(N == 0  || N > op->alloc) N= op->alloc;
+if( N > PLIMIT)
+errexit("perm",zm_getlinenum(),RUN_ERROR_INVALID_ARGUMENT,"vperm::(v,N) N must be <= 100",NULL);
+
+for(i=0;i<N;i++) PIndex[i]= i;
+PMore = 1;
+} // mpv_perm_init
+
+
+static void __forceinline Pswap(int i, int j)
+{
+int tmp = PIndex[i];
+PIndex[i]= PIndex[j];
+PIndex[j]= tmp;
+}
+
+
+int PgetNext()
+{
+  int i = N - 1;
+  int j = N;
+
+  while (PIndex[i-1] >= PIndex[i]) i = i-1;
+
+  if(i==0) return 0;
+
+  while (PIndex[j-1] <= PIndex[i-1]) j = j-1;
+
+// swap PIndexes at positions (i-1) and (j-1)
+  Pswap(i-1, j-1);    
+
+  i++; j = N;
+
+  while (i < j)
+  {
+    Pswap(i-1, j-1);
+    i++;
+    j--;
+  }
+
+  return 1;
+}
+
+
+/*---------------------------------------------------------------------------
+mpv_perm_next
+returns 0 when finished
+check rop != op 
+----------------------------------------------------------------------------*/
+int	mpv_perm_next(mpv_t rop, mpv_t op)
+{
+
+assert(rop->type == op->type);
+
+if(rop == op
+|| rop->type != op->type)
+errexit("perm::next",zm_getlinenum(),RUN_ERROR_NORESULT,"bad vector",NULL);
+
+if(!PMore) return 0;
+mpv_set_dim(rop,N); 
+
+for(i=0;i<N;i++)
+switch(op->type)
+{
+case UINT_TYP : rop->dat.uitem[PIndex[i]] = op->dat.uitem[i]; break;
+case MPZ_TYP : mpz_set(rop->dat.zitem[PIndex[i]],op->dat.zitem[i]); break;
+case MPF_TYP : mpf_set(rop->dat.fitem[PIndex[i]],op->dat.fitem[i]); break;
+case MPQ_TYP : mpq_set(rop->dat.qitem[PIndex[i]],op->dat.qitem[i]); break;
+default : assert(0);
+}
+
+PMore = PgetNext();
+return 1;
+} // perm_next
+
+

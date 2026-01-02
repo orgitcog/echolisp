@@ -1,0 +1,53 @@
+;;  http://research.cs.wisc.edu/techreports/1990/TR909.pdf
+;;  http://rosettacode.org/wiki/Sieve_of_Eratosthenes
+;; http://rosettacode.org/wiki/Ludic_numbers
+
+(require 'types)
+
+	
+;; next ludic in sieve > p, or #f
+(define (ludic-next sieve p ) ;; 
+		(bit-vector-scan-1 sieve (1+ p)))
+		
+(define (ludic-skip sieve p s n)
+	(for ((i s)) 
+	#:break (>= p n) => #f 
+	(set! p (bit-vector-scan-1 sieve (1+ p)))) p)
+		
+;; returns a bit-vector - sieve- all numbers in [0..n-1]
+(define (lusieve n)
+  (define ludic (make-bit-vector-1 (* 2 n) ))
+  (bit-vector-set! ludic 0 #f)
+  (define s 1) ; step
+  (define p s)
+  
+  (while (< s n)
+  (set! s (ludic-next ludic s))
+  #:break (not s)
+  (set! p  s) ; starter = increment
+  	(while (< p n)
+  	(set! p (ludic-skip ludic p s n))
+  	#:break (not p)
+    (bit-vector-set! ludic p #f)))
+  	
+  ludic) 
+;;
+;;
+;;
+
+(define L (lusieve 30000))
+[2]→ L
+(bit-vector-take L 25)
+[3]→ (1 2 3 5 7 11 13 17 23 25 29 37 41 43 47 53 61 67 71 77 83 89 91 97 107)
+(bit-vector-count L 1000)
+[4]→ 142
+(for/list ((i [in-range 2000 2006])) (bit-vector-xcount L i))
+[12]→ (21475 21481 21487 21493 21503 21511)
+
+alaincornu.photo@orange.fr
+
+  
+
+
+ 
+

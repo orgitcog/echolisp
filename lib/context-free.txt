@@ -1,0 +1,20 @@
+#|
+context free grammar
+https://www.cs.rochester.edu/~nelson/courses/csc_173/grammars/cfg.html
+http://stackoverflow.com/questions/17387686/how-to-enumerate-the-strings-of-a-context-free-grammar
+|#
+
+(define ops '( * - + / ))
+(define nums '(1 2 3 4))
+
+#|
+grammar
+
+	res -> op* term*
+	term* -> num | op* term* 
+	op* -> + | - | * | /
+|#
+
+
+(define starter '( op* term*))
+(define Q 

@@ -1,0 +1,19 @@
+
+;;http://rosettacode.org/wiki/Hickerson_series_of_almost_integers
+
+(define LOG2 0.693147180559945309417232121458)
+
+
+(define NLOG2 693147180559945309417232121458)
+
+(define (h n) ;; floating point ,  IEEE 754 64-bit numbers , not enough precision
+	(// (factorial n) 2 (expt LOG2 (1+ n))))
+	
+(define (g n) ;;  10 * (h n) , using bigints .
+	(/ (* 10 (expt 1e30 (1+ n) ) (factorial n))  (* 2 (expt NLOG2 (1+ n)))))
+
+(define (almost-integer? n)
+		(define dec-digit (string-last (number->string n)))
+		(or (string=? dec-digit "9") (string=? dec-digit "0")))
+	
+(for ((i (in-range 1 18))) (writeln i (g i) (h i) (almost-integer? (g i))))

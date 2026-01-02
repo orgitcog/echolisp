@@ -1,0 +1,74 @@
+
+;;http://rosettacode.org/wiki/Pattern_matching
+
+
+(require 'match)
+(require 'struct)
+
+
+(define (N-tostring n) (format "%s %d"  (N-color n) (N-value n)))
+(struct N (color left value right) #:tostring N-tostring)
+
+(define (balance t)
+  (match t
+    [(N '⚫️ (N '🔴 (N '🔴 a x b) y c) z d) (N '🔴 (N '⚫️ a x b) y (N '⚫️ c z d))]
+    [(N '⚫️ (N '🔴 a x (N '🔴 b y c)) z d) (N '🔴 (N '⚫️ a x b) y (N '⚫️ c z d))]
+    [(N '⚫️ a x (N '🔴 (N '🔴 b y c) z d)) (N '🔴 (N '⚫️ a x b) y (N '⚫️ c z d))]
+    [(N '⚫️ a x (N '🔴 b y (N '🔴 c z d))) (N '🔴 (N '⚫️ a x b) y (N '⚫️ c z d))]
+    [else t]))
+    
+    (define (ins value: x  tree: t)
+    (match t
+      ['empty (N '🔴 'empty x 'empty)]
+      [(N c l v r) (cond [(< x v) (balance (N c (ins x l) v r))]
+                         [(> x v) (balance (N c l v (ins x r)))]
+                         [else t])]))
+                         
+	(define (insert value: x tree: s)
+  		(match (ins x s) [(N _ l v r) (N '⚫️ l v r)]))
+  	
+(define (t-show n (depth 0))
+	(when (!eq? 'empty n)
+		(t-show (N-left n) (+ 12 depth))
+		(writeln (string-pad-left (format "%s" n ) depth))
+		(t-show (N-right n) (+ 12 depth))))
+		
+(define T (for/fold [t 'empty] ([i 32]) (insert (random 100) t)))
+(define T (for/fold [t 'empty] ([i 16]) (insert i t)))
+	
+#|
+(define T (for/fold [t 'empty] ([i 32]) (insert (random 100) t)))
+[23]→ T
+(t-show T)
+                                                       🔴 0    
+                                           ⚫️ 3    
+                               ⚫️ 6    
+                                          ⚫️ 15    
+                  🔴 25    
+                                          ⚫️ 29    
+                                                      🔴 33    
+                              ⚫️ 37    
+                                                      ⚫️ 38    
+                                          🔴 42    
+                                                                  🔴 43    
+                                                      ⚫️ 44    
+      ⚫️ 50    
+                              ⚫️ 51    
+                  ⚫️ 52    
+                                          ⚫️ 60    
+                              🔴 61    
+                                                      🔴 65    
+                                          ⚫️ 66    
+⚫️ 67    
+                                          🔴 73    
+                              ⚫️ 75    
+                  ⚫️ 81    
+                              ⚫️ 87    
+      ⚫️ 89    
+                              ⚫️ 95    
+                  ⚫️ 96    
+                              ⚫️ 99    
+|#
+    
+    
+    

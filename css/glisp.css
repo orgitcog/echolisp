@@ -1,0 +1,591 @@
+
+/* http://www.alsacreations.com/article/lire/930-css3-media-queries.html */
+
+
+html { 
+	font-size: 100%;
+	margin-left : 10px;
+	 }
+
+
+body {
+	background-color :   #ffffff ; 	
+	color : #000000;
+	font-family:  Verdana, Arial, Helvetica, sans-serif; 
+	font-size :  1em ; 
+	/* font-variant : small-caps ;  pour les noms propres */
+	cursor: default;
+	}
+	
+
+.logo {
+	position : absolute;
+	top : 12px;
+	left:24px;
+	/*border: 1px solid black; */
+}
+
+
+
+.icon {
+border: 1px solid black;
+width : 20px;
+height: 20px;
+ 	-webkit-border-radius: 4px;
+	-moz-border-radius: 4px;
+	 border-radius: 4px;
+}
+
+
+/* BULLES */
+
+#bulle {
+	visibility : hidden ;
+	opacity : 1 ;
+	}
+	
+.bulle {
+z-index:100000 ;
+position: absolute;
+  left: 40px;
+  top: 400px;
+  width:120px;
+  height:48px;
+  text-align:center;
+  border: 2px solid orange;
+  background-color : yellow;
+  	-webkit-border-radius: 25px;
+	-moz-border-radius: 25px;
+	 border-radius: 25px;
+	}
+	
+#bulleMsg {
+	position : absolute;
+	top : 14px;
+	left : 0px;
+	margin : 0px 0px 0px 0px ;
+	text-align:center;
+	width:100%;
+	font-size: 0.8em;
+	
+}
+	
+/* DIALOGS */
+
+#overlay {
+	visibility: hidden;
+}
+
+.overlay {
+  z-index:100000;
+  position: absolute;
+  left: 200px;
+  top: 300px;
+  width:180px;
+  height:100px;
+  text-align:center;
+  border: 1px solid black;
+  background-color: orange;
+  box-shadow:4px 4px 4px #333333;
+  -webkit-transition: width 1s ease, height 1s ease;  
+  -moz-transition: width 1s ease, height 1s ease; 
+  -o-transition: width 1s ease, height 1s ease; 
+  transition: width 1s ease, height 1s ease; 
+}
+
+.overlay-zoom {  
+    width: 360px;  
+    height: 200px;  
+}  
+
+
+#overlay-btn {
+	position : absolute;
+	right : 5px;
+	top : 5px;
+}
+
+#dlgTitle {
+	font-size :  1.5em ; 
+	font-variant : small-caps ; /* pour les noms propres */
+}
+	
+/* DISPLAYS */
+h1 {
+	margin-left:40px;
+	margin-bottom : 8px;
+	margin-top: 0px;
+	}
+	
+/* code */
+/* a changer avec media queries */
+
+.textplot {
+		font-size :  16px ;
+		font-family: Verdana,  sans-serif;
+}
+   
+#plotwrapper {
+	position : fixed;
+	margin-top:0px;
+	margin-left:0px;
+	top:0px;
+	left:0px;
+	margin: 0px;
+	overflow:hidden;
+	z-index:900;
+	width:100%;
+	height:100%;
+}
+
+#plot3d {
+	position : fixed;
+	margin-top:0px;
+	margin-left:0px;
+	top:0px:
+	left:0px;
+	margin: 0px;
+	z-index:900;
+	}
+	
+#plot3dbuttons {
+	position : fixed;
+	top:0px;
+	left:0px;
+	z-index : 10000;
+	width:98%;
+	margin-bottom : 4px;
+	/*background-color : transparent ;
+	background : transparent ;*/
+}
+
+#plot3dsliders {
+	position : fixed;
+	top:32px;
+	left:4px;
+	z-index : 9000;
+	width : 180px;
+	border : 1px solid gray ;
+	z-index : 9000;
+}
+
+
+.graph {
+	display : block;
+    width: 96% ;
+    height : 410px;
+    position : relative;
+    }
+   
+
+.plotter { /* the canvas */
+    position : absolute;
+    top : 0px;
+    left: 0px;
+    border : 1px solid black ;
+    background : black;
+    z-index:100;
+    }
+    
+.hsliders {
+	position : absolute;
+	top : 0px;
+	left : 0px;
+	width : 180px;
+	border : 1px solid green ;
+	font-size : 10px;
+	z-index :200;
+	margin-bottom : 4px;
+	}
+	
+.sliders {
+	position : absolute;
+	top : 0px;
+	left : 0px;
+	width : 180px;
+	border : 1px solid gray ;
+	z-index :100;
+	}
+	
+.slider {
+	width : 140px;
+	color: red;
+	font-size : 10px;
+	margin-left : 0px;
+}
+.slabel {
+	margin-left:4px;
+	font-size : 12px;
+	min-width : 16px;
+	max-width : 16px;
+	display: inline-block;
+	background-color : lightgray ;
+	padding-left : 2px ;
+}
+.stext {
+	font-size: 0.7em ;
+	font-family: Verdana,  sans-serif;
+	text-align : center;
+}
+
+
+
+#cells { /* unique object */
+	width : 98%;
+}
+
+.cell {
+	border : 1px solid blue ;
+	margin-bottom : 5px;
+}
+
+.cellbuttons {
+	margin-left : 8px;
+	margin-bottom : 4px;
+}
+
+.hilite   { background-color: #00ff00; color: #00ff00; }
+.herror   { background-color: #ff0000; color: #ff0000; }
+.complete { /* auto complete */
+		color :#888888;
+		margin-top:0px;
+		margin-bottom:0px;
+}
+
+
+ 
+.wrapper     { 
+	    max-width:100% ;
+	    width:98% ;
+	    height : 48px; /* 80px ; */
+	    position: relative;
+	    outline: none;
+	    margin-top : 8px;
+	    margin-bottom:8px; 
+	    margin-right : 4px;
+		margin-left : 8px;
+		padding-right : 4px ;
+		/* border : 1px solid red ;*/
+		}
+
+.stdin {
+position: relative;
+	width:100%;
+	max-width:100% ;
+	height: 48px ; 
+	margin:0;
+	padding-left : 4px ;
+	padding-bottom: 2px;
+	
+	border: 0;
+	font-family : Verdana ,Lucida Sans Typewriter, Arial, Helvetica, sans-serif; 
+	font-size :  0.8em ; 
+	overflow : hidden ; /* here !!! */
+	background-color: transparent;
+	z-index: 1000;
+	outline: solid 1px #666; 
+	
+}
+
+.hiliter {
+	position: absolute;
+	/* top : 1px ; Chrome */
+	top : 0px ;
+	
+	width:100%;
+	max-width:100% ;
+	height: 48px;
+	margin:0;
+	padding-left: 4px ;
+	padding-bottom: 2px;
+
+	font-family : Verdana ,Lucida Sans Typewriter, Arial, Helvetica, sans-serif; 
+	font-size :  0.8em ; 
+	/*line-height : 16px;*/
+	background-color : #fff;
+	color : #fff;
+	z-index:999;
+	outline:none;
+}
+
+
+.stdout {
+    margin-left:20px;
+    margin-right:4px;
+    margin-top:4px;
+    margin-bottom:8px;
+    max-width:100%;
+    max-height: 400px; /* pour voir */
+    border-width: 0 0 0 1px;
+ 	border-style: solid;
+  	border-color: gray;
+    padding-left: 4px ;
+    padding-bottom : 2px;
+    color: black;
+    background-color:white;
+    font-size :  0.8em ;
+    height : auto ; /* last added ... */
+    font-family:  Lucida Sans Typewriter, Verdana, Arial, Helvetica, sans-serif;
+    overflow-y : auto ;
+    overflow-x : hidden ;
+    /*text-overflow : ellipsis;*/
+    word-wrap: break-word;
+    z-index : 1000 ;
+    }
+    
+.xstdout { /* hidden */
+    margin-left:20px;
+    margin-right:4px;
+    margin-top:4px;
+    margin-bottom:8px;
+    max-width:100%;
+    max-height: 20px; /* pour voir */
+    border-width: 0 0 0 3px;
+ 	border-style: solid;
+  	border-color: blue;
+    padding-left: 4px ;
+    padding-bottom : 2px;
+    color: black;
+    background-color:white;
+    font-size :  0.8em ;
+    height : auto ; /* last added ... */
+    }
+    
+.ui { /* hidden */
+    margin-left:0px;
+    margin-right:4px;
+    margin-top:4px;
+    margin-bottom:8px;
+    max-width:100%;
+    padding-left: 4px ;
+    padding-bottom : 2px;
+    color: black;
+    background-color:#eeeeee;
+    font-size :  0.8em ;
+    height : auto ; /* last added ... */
+    }
+    
+/* UI */
+.uielement {
+   	margin-left:5px;
+    margin-right:5px;
+    margin-top:5px;
+    margin-bottom:5px;
+    background-color:white;
+}
+
+input:invalid {
+  border: 1px solid red;
+}
+
+input:valid {
+  border: 1px solid green;
+}
+
+.graph {
+	display: none;
+	margin-left : 8px;
+	margin-bottom: 8px;
+	}
+    
+
+.buttons {
+	width : 94% ;
+	margin-right: auto;
+	margin-left:6px;
+	margin-top: 16px;
+}
+
+.button-img {
+	width: 40px;
+	height: 40px;
+	margin-right: auto;
+	margin-left:auto;
+	margin-top : 0px;
+}
+	
+img {
+	margin : 0px 0px 0px 0px ;
+	}
+	
+
+/* BUTTONS */
+.cbutton { /* cell */
+width : 40px;
+
+margin-right : 6px;
+text-align : center;
+cursor: pointer;
+font-size: 0.7em;
+color : black;
+background-color : white ; /*#dddddd;*/
+border : 1px solid gray ;
+padding-top: 2px;
+padding-bottom : 2px;
+padding-right : 4px;
+padding-left : 4px;
+}
+
+.cbutton:hover {
+border : 1px solid blue ;
+background-color :  lightgray;
+}
+
+.cbutton:active {
+box-shadow: 2px 2px 0 gray;
+}
+
+
+.ui-3d-select {
+display : block;
+margin-right : 0px;
+width : 180px;
+text-align : left;
+font-size: 0.8em;
+text-align : center;
+color : blue;
+font-family:  Verdana,  Helvetica, sans-serif;
+}
+.ui-3d-value {
+display : block;
+margin-right : 0px;
+width : 180px;
+text-align : left;
+font-size: 0.8em;
+height : 16px;
+color : blue;
+font-family:   Verdana,  Helvetica, sans-serif;
+}
+
+.selbutton { /* horizontal TOP : select */
+display : block;
+margin-right : 10px;
+width : 120px;
+text-align : left;
+float:right;
+cursor: pointer;
+font-size: 0.8em;
+text-align : center;
+color : blue;
+}
+
+.hbutton { /* horizontal TOP */
+display : block;
+margin-right : 10px;
+border : 1px solid black ;
+width : 60px;
+text-align : center;
+float:right;
+cursor: pointer;
+font-size: 0.8em;
+color : blue;
+}
+
+.hbutton:hover {
+border : 1px solid blue ;
+color : #1396e2;
+}
+
+.hbutton:active {
+box-shadow: 2px 2px 0 gray;
+}
+
+.hbutton.disabled {
+color : #888888;
+}
+
+
+
+.xbutton { /* horizontal  TOP  / Reset*/
+display : block;
+margin-right : 10px;
+border : 1px solid black ;
+width : 60px;
+text-align : center;
+float : right;
+cursor: pointer;
+font-size: 0.8em;
+color : red;
+}
+
+.xbutton:hover {
+border : 1px solid blue ;
+color : #1396e2;
+}
+
+
+	
+h3 {
+	margin-top : 10px;
+	margin-bottom:0px;
+	}
+
+/* PRINTER */
+.printer {
+	overflow : hidden ;
+	text-overflow : hidden;
+	display : none ;
+	}
+	
+h4 { /* page */
+	margin-top : 10px;
+	margin-bottom:0px;
+	margin-left:0px;
+	color : blue;
+	}
+	
+
+/* DOC */
+#doc {
+	font-family:  Lucida Sans Typewriter, Verdana, Arial, Helvetica, sans-serif; 
+	font-size :  1.2em ; 
+}
+
+
+#info {
+	font-family:  Verdana, Arial, Helvetica, sans-serif; 
+	font-size :  0.7em ; 
+	margin-right : 4px;
+	margin-left : 4px;
+	padding-right : 4px ;
+	margin-top : 8px;
+	margin-bottom : 8px;
+	width: 97%;
+	max-width:97%;
+	overflow:hidden;
+	height : 2.4em;
+	text-overflow : ellipsis;
+	line-height: 1.2em;
+    max-height: 2.4em;
+    border : 1px solid lightgray;
+    padding-left : 4px ; 
+    white-space: pre-wrap; 
+	}
+	
+
+/* FOOTER */
+.footer {
+	font-family:  Verdana, Arial, Helvetica, sans-serif; 
+	font-size :  0.7em ; 
+	margin-left : 0px;
+	}
+	
+/* special */
+.htable , .matrix {
+    border-collapse: collapse;
+ 	border : 1px solid black;
+ 	font-size:1.0em;
+    width: auto;
+}
+
+.htable th, .htable td , .matrix tr, .matrix td{
+  text-align: left;
+  border: 1px solid #ccc;
+}
+	
+	
+
+	
+
+
+	

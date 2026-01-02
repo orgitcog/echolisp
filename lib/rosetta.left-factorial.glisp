@@ -1,0 +1,38 @@
+#|
+rosetta
+http://rosettacode.org/wiki/Left_factorials
+|#
+(require 'bigint)
+
+;; bogue (/ big big)
+;; FF : dom.max_script_run_time;20
+
+
+(define (!n n) 
+	(if (zero? n)  0
+	(+ (!n (1- n)) (factorial (1- n)))))
+(remember '!n)
+
+#|
+(define (!n n) ;; Chrome
+	(if(zero? n) 0
+	(for/sum ((i n)) (factorial i))))
+	
+|#
+
+
+
+;; FF 62 secs
+#|
+(define (!n n (acc 0))
+	(if (zero? n) acc 
+	(!n (1- n) (+ acc (factorial (1- n))))))
+|#
+
+	
+(for ((n 11)) (printf "!n(%d) = %d" n (!n n)))
+(for ((n (in-range 20 120 10))) (printf "!n(%d) = %d" n (!n n)))
+;; (for ((n (in-range 1000 10001 1000))) (printf "Digits of !n(%d) = %d" n (number-length (!n n))))
+;;(for ((n (in-range 1000 10001 500)))  (!n n) (writeln n))
+
+

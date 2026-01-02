@@ -1,0 +1,53 @@
+; http://rosettacode.org/wiki/Hailstone_sequence
+
+(lib 'hash)
+(lib 'sequences)
+(lib 'compile)
+
+(define (hailstone n)
+(when (> n 1)
+	(if (even? n) (/ n 2) (1+ (* n 3)))))
+	
+(define H27 (iterator/f hailstone 27))
+	
+(define H (make-hash))
+
+
+(define (hlength seed)
+	(define collatz (iterator/f hailstone seed))
+	(or
+	(hash-ref H seed)
+	(hash-set H seed
+	(for ((i (in-naturals)) (h collatz))
+	#:break (hash-ref H h) => (+ i (hash-ref H h))
+	(1+ i)))))
+	
+(define (task (nmax 100000))
+	(for ((n [1 .. nmax])) (hlength n))
+	(define hmaxlength (apply max (hash-values H)))
+	(define hmaxseed (hash-get-key H hmaxlength))
+	(writeln 'maxlength= hmaxlength 'for hmaxseed))
+	
+
+	
+
+(task)
+maxlength=     351     for     77031    
+(task 200000)
+maxlength=     383     for     156159    
+(task 300000)
+maxlength=     443     for     230631    
+(task 400000)
+maxlength=     443     for     230631    
+(task 500000)
+maxlength=     449     for     410011    
+(task 600000)
+maxlength=     470     for     511935    
+(task 700000)
+maxlength=     509     for     626331    
+(task 800000)
+maxlength=     509     for     626331    
+(task 900000)
+maxlength=     525     for     837799    
+(task 1000000)
+maxlength=     525     for     837799    

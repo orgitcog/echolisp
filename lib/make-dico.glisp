@@ -1,0 +1,141 @@
+;; see also tamagotchi.glisp
+
+(require 'sql)
+(require 'words)
+(require 'hash)
+(require 'dico.fr)
+
+#|
+subjuseront guiraitron  pruquantes
+extiquer acarâmen vraîtera
+courburez 
+ouiston évionne surétin
+entatoboctifère 
+flomble 
+excerablistor 
+inamplague stitassisme
+glystres emetolon
+gricaler ligoutte
+picultisurion 
+désolorâmes
+ingidémes
+tornion
+cornappationte (italien)
+lochiste phèquent nouquera sopettes
+hallemmalate mêlânomplis ableraction 
+|#
+
+;;;;;;;;; ==== build H table ================
+
+(define (h-one H  str (bucket))
+	(set! str (string-append "%%" str "$"))
+	(define lstr (string->list str))
+	(for ((a lstr) (b (rest lstr)) (c (cddr lstr)))
+		(set! bucket (hash-ref! H (string-append a b) make-hash))
+		(hash-set bucket c (1+ (hash-ref! bucket c 0)))))
+		
+(define (h-all H lwords)
+	(for ((w lwords))
+		#:continue (< (string-length w) 4)
+		(h-one H w)))
+		
+
+(define (h-freq bucket)
+	(define sum (for/sum ((ct (hash-values bucket))) ct))
+	(define freq 0)
+	(for ((k (hash-keys bucket)))
+		(set! freq (+ freq (hash-ref bucket k)))
+		(hash-set bucket k (// freq sum))))
+		
+;;;;;; ============== generate ===========
+		
+(define (h-pick bucket p) ;  p in [ 0 1]
+	(for ((k (hash-keys bucket)))
+		#:break ( >=  (hash-ref bucket k) p) => k ))
+		
+(define (h-pick-no-last bucket (c) )
+	(for ((i 10))
+		(set! c (h-pick bucket (random)))
+		#:break (not (string=? c "$")) => c 
+		"$"))
+		
+(define (is-term? ab ) ;; legal tail
+	(define bucket (hash-ref H ab))
+	(member "$" (hash-keys bucket)))
+	
+(define (follower? a b c )
+		(define bucket (hash-ref H (string-append a b)))
+		(member c (hash-keys bucket)))
+	
+		
+(define (generate len)
+		(define a "%")
+		(define b "%")
+		(define c "%")
+		(define ab "")
+		(for/string ((i 32))
+
+			(set! a b)
+			(set! b c)
+			(set! ab (string-append a b))
+			#:break (and  (>= i len) (is-term? ab))
+			(set! c (h-pick-no-last (hash-ref H ab) ))
+			#:break (string=? c "$")
+			c ))
+	
+(define (generate-xy len x y  tail) ;; term in x y
+		(define a "%")
+		(define b "%")
+		(define c "%")
+		(define ab "")
+		(string-append
+		
+		(for/string ((i 32))
+
+			#:break (and  (>= i len) (follower? c x y))
+			(set! a b)
+			(set! b c)
+			(set! ab (string-append a b))
+			
+			(set! c (h-pick-no-last (hash-ref H ab) ))
+			#:break (string=? c "$")
+			c )
+		tail))
+	
+	
+;;; ===============================================
+
+(define H (make-hash))
+(string-delimiter "")
+
+(define (inspect str)
+(hash->list (hash-ref H str)))
+
+	
+(define (step-1)
+	(define L (words-select #:any null 210000))
+	(h-all H L)
+	(inspect "%%"))
+	
+(define (step-2)
+	(for ((bucket (hash-values H)))
+		(h-freq bucket))
+	(inspect "%%"))
+	
+	
+(define (make-words (len 8) (num 42))
+	(for ((i num)) (write (generate len))))
+	
+;; must have legal end  xy - then add tail
+(define (make-words-xy x y (tail "") (len 8) (num 42))
+	(for ((i num)) (write (generate-xy  len x y tail ))))
+	
+(define (make-wlist)
+	(for ((l (in-range 6 15)))
+		(make-words l 8)
+		(writeln)))
+		
+;; usage (step-1) (step-2) (make-wlist)
+	
+	
+		

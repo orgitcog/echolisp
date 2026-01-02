@@ -1,0 +1,67 @@
+#|
+Regression analysis
+Exports : (r-squares serie n)
+	Input : a data serie and dim
+	Output : A linear function which fits the serie (least-squares method)
+http://en.wikipedia.org/wiki/Ordinary_least_squares
+|#
+
+(require 'plot)
+
+;; access x,y for i-th item of serie
+(define-syntax-rule (rx serie i) (car (vector-ref serie i)))
+(define-syntax-rule (ry serie i) (cdr (vector-ref serie i)))
+
+;; returns lambda(x) :  y = alpha + beta*x
+;; UN-optimized. But, who cares?
+;; Magic formula : beta = (∑xy - 1/n ∑x∑y) / (∑x^2 -1/n ∑x * ∑x) ; alpha = 1/n (∑y - beta*∑x)
+
+(define (r-squares serie n)
+	(set! serie (data-serie serie)) ;; normalize if needed
+	(let [
+	(x (for/sum ((i n)) (rx serie i))) ;; ∑ x
+	(y (for/sum ((i n)) (ry serie i)))
+	(x2 (for/sum ((i n)) (* (rx serie i) (rx serie i) ))) ;; ∑ x*x
+	(y2 (for/sum ((i n)) (* (ry serie i) (ry serie i) )))
+	(xy (for/sum ((i n)) (* (rx serie i) (ry serie i) )))] ;; ∑ x*y
+	
+	(let* [
+	(one/n (// 1 n))
+	(beta (// (- xy (* x y one/n)) (- x2 (* x x one/n))))
+	(alpha (* one/n ( - y (* beta x))))]
+	(writeln " y = "  alpha "+" beta "* x ") 
+
+	(lambda (x) (+ ( * x beta) alpha)))))
+	
+;;build our test serie : n points; y = x + alea
+(define (r-test (n 20))
+	(unless (number? n) (error n "r-test : expecting number"))
+	(set! n (max 4 (min n 1000)))
+	(define *r-serie* (make-vector 0))
+	
+	(for ((i n)) (vector-push *r-serie* (cons i (+ i (random -6)))))
+	(writeln "SERIE of 🔸"  *r-serie*) 
+	
+	(plot-clear)
+	
+
+;; sets grid dimensions
+;; date-series-minmax returns ((xmin xmax) (ymin ymax))
+	(plot-y-minmax (cadr (data-serie-minmax *r-serie*)))
+	(plot-x-minmax (car (data-serie-minmax *r-serie*)))
+	(plot-grid 5 5)
+	(plot-axis 0 0 "red")
+	(plot-dots *r-serie* "🔸")
+	
+	(define r-estimation 
+ 		(r-squares *r-serie* (vector-length *r-serie*)))
+ 
+ 	(plot r-estimation (1- n))
+ 	(plot-on))
+ 	
+(writeln "Usage:  (r-squares serie n) (r-test [n])")
+
+	 
+
+
+

@@ -1,0 +1,66 @@
+;; anagrams
+
+
+(require 'struct)
+(require 'hash)
+(require 'sql)
+(require 'words)
+(require 'dico.fr.no-accent)
+(string-delimiter "")
+
+
+(define (string-sort str)
+	(list->string (list-sort string<?  (string->list str))))
+	
+(define (ana-pat mot)
+	(define pat (string-sort mot))
+	(set! pat (string-replace pat "/(.)/g" ".*$1"))
+	(set! pat (string-replace pat "/$/" ".*/"))
+	(set! pat (string-replace pat "/^/" "/"))
+	(list (string-length mot) pat mot))
+	
+	
+(define (find-ana str  (minlg 4) (maxlg 99) (exact #t) (minus ""))  ;; in [min-lg max-lg ]
+	(set! str (string-sort str))
+	(set! str (string-remove str minus))
+	(set! maxlg (min maxlg (string-length str)))
+	(writeln 'in-> str 'maxlg-> maxlg)
+	
+	(for-each writeln
+	(for/list ((pat pats))
+		#:continue (< (car pat) minlg)
+		#:continue (> (car pat) maxlg)
+		#:continue (not (string-match str (cadr pat)))
+		#:continue (and exact (not (hash-ref H (string-remove str (caddr pat)))))
+		(if exact 
+			(list (caddr pat) (hash-ref H (string-remove str (caddr pat))))
+			(list (caddr pat) (string-remove str (caddr pat)))
+			)
+		)))
+		
+(define (hash-words)
+	(define sw "")
+	(hash-set H "" '(""))
+	(hash-set H "l" '("l"))
+	(for ((w mots))
+		 (set! sw (string-sort w))
+		 (hash-set H sw  (cons w (hash-ref! H sw null)))))
+		 
+(define mots (make-set  (words-select #:any null 999999)))
+(define pats  (map ana-pat mots))
+(define H (make-hash))
+(hash-words)
+
+#|
+elections regionales
+selectionna les geoliers
+|#
+
+
+
+
+
+
+
+
+

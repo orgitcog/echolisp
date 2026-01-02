@@ -1,0 +1,12 @@
+#|
+reader macros
+|#
+(define-macro m-range [a .. b] (range a (1+ b))) ;; 
+(define-macro m-or (a || b ...) (string-append a b ... ))
+(define-macro m-and (a && b ...) (and a b ...))
+(define-macro m-set ((? symbol? a) <- b) (begin (set! a b) a))
+(define-macro m-++ (++ (? symbol? a)) (begin (set! a (1+ a)) a))
+(define-macro m--- ((? symbol? a) --) (begin (set! a (1- a)) a))
+
+
+

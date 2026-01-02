@@ -1,0 +1,80 @@
+http://rosettacode.org/wiki/Greatest_subsequential_sum#Racket
+
+
+#|
+(define (max-seq L)
+	(define max-value -Infinity))
+	
+(define (max-max L)
+(define value 
+	(if
+	(empty? L) -Infinity
+	;; <== HERE (because recursive call of _max-max FORMAL
+	(max (first L)  (+ (first L) (max-max  (cdr L)  )))))
+	(when (> value max-value)
+		(set! max-value value))
+	value)
+
+    (max-max L)
+    max-value
+   )
+|#
+    
+(lib 'struct)
+(struct result (score starter))
+
+;; the score of  i in sequence ( .. i j ...)  is max (i , i + score (j))
+;; to compute score of (a b .. x y z) :
+;; start with score(z) and compute scores of y , z , ..c, b , a.
+;; this is O(n)
+
+(define (max-max L into: result)
+(define value 
+	(if
+	(empty? L) -Infinity
+	(max (first L)  (+ (first L) (max-max (cdr L) result )))))
+	
+    (when (> value (result-score result)) 
+		(set-result-score! result value) ;; remember best score
+		(set-result-starter! result L))  ;; and its location
+	value) ;; return value of sub-sequence
+
+(define (max-seq L)
+	(define best (result -Infinity null))
+	(max-max L into: best)
+	(define score (result-score best))
+	
+	;; return (best-score (best sequence))
+	(list score
+	(for/list (( n (result-starter best)))
+			   #:break (zero? score)
+			   (set! score (- score n))
+			   n)))
+	
+(define L '(-1 -2 3 5 6 -2 -1 4 -4 2 -1))
+(max-seq L)
+
+Open question. Take n random sequences, each of 1000 random numbers in [-1000 .. 1000]. 
+Take the mean M<sub>n</sub> of their best core ( = value of max sub-sequence). Is there a limit for when n → ∞ ? Experiments show something around 22000, but a formal proof will be great !
+	
+(define (r1000 x) (random -1000))
+
+(define (max-random (N 1000))
+	(define R (map r1000 (iota N)))
+	(define best (result -Infinity null))
+	(max-max R into: best)
+	
+	 (result-score best))
+	 
+(define (R iter)
+	(define L (for/list ((i iter)) (max-random 1000)))
+	(for/sum ((i L)) i))
+	
+;; 22189
+	
+
+	
+	
+
+(for/fold (acc 0) ((s max-sequence))
+			

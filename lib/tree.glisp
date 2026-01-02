@@ -1,0 +1,138 @@
+#|
+tree.glisp
+|#
+(require 'tree)
+
+
+#|
+U T I L I T I E S
+|#
+
+;; tree-pretty(?)-print
+(string-delimiter "")
+(define (new-tab str) (string-append str "|"))
+
+(define (tree-print node (indent "|"))
+		(unless (null? node)
+		(writeln indent (node-datum node))
+		(for-each tree-print (node-sons node) (circular-list (new-tab indent)))))
+
+;; binary : prints <left> <node> <right> for each node
+(define (bin-node-print node)
+	(unless (null? node)
+	(writeln (node-datum (node-left node)) (node-datum node) (node-datum (node-right node)))))
+	
+(define (bin-tree-print tree)
+	(tree-for-each bin-node-print tree))
+	
+#|
+tests
+|#
+(define MAXNODES 0)
+(define NODES 0)
+
+;; add a numbered leaf. datum = current node count
+(define (node+1 node)
+	(when (< NODES MAXNODES)
+			(set! NODES (1+ NODES))
+			// (writeln 'node+1 (node-datum node) '--> NODES)
+			(node-add-leaf node NODES)))
+		
+(define (node+3 node)
+		(node+1 node) (node+1 node) (node+1 node))
+		
+		
+;; make a  tree
+;; number nodes 1 to $MAXNODES
+;; node.datum = insertion step
+(define (make-tree/nums (nodes 20)) ;;  2^n - 1 will do
+		(set! MAXNODES nodes)
+		(set! NODES 1)
+		(let ((root (make-tree 1)))
+			(tree-for-each node+3 root)
+			(tree-for-each node+3 root)
+			(tree-for-each node+3 root)
+			root))
+
+
+;; make a binary tree
+;; key = name, value = insertion step
+(define *names* '(monique vanessa albert simon andré xanthippe olga siméon antoine alexandre papa adrien julie veronique nathalie benjamin nathalie marine ornella sophia antonella clara vanessa simonetta marylin june judy nicolas sigisbert gontran godefroy gargamel georges frederick ludwig))
+
+(define (make-bin-tree/names) 
+		(let (
+		(tree (make-bin-tree "monica" 666)))
+		(for-each (lambda(k v) (bin-tree-insert tree k v)) *names* (iota 100))
+		tree))
+		
+;; make a binary tree of numbers 1 ...n
+;; key = i, value = i
+(define (make-bin-tree/nums (n 16)) (let [
+		(tree (make-bin-tree 1 1))
+		(nums (range 1 (1+ n)))]
+		(for-each (lambda(k v) (bin-tree-insert tree k v)) nums nums)
+		tree))
+		
+;; --------------------------------------------------------------
+;; tree traversal
+;;
+(define (tree-add-num tree ij) ; add leaf j to node i
+		(node-add-leaf (tree-ref tree (first ij)) (rest ij)))
+(define tree (make-tree 1))
+(define nodes '((1 . 2)(1 . 3) (2 . 4) (2 . 5) (4 . 7) (3 . 6) (6 . 8) (6 . 9)))
+
+(for-each tree-add-num (circular-list tree) nodes)
+
+(define (bin-tree-in-order proc node)
+	(unless (null? node)
+		(bin-tree-in-order proc (node-left node))
+		(proc (node-datum node))
+		(bin-tree-in-order proc (node-right node))))
+		
+(define (bin-tree-post-order proc node)
+	(unless (null? node)
+		(bin-tree-post-order proc (node-left node))
+		(bin-tree-post-order proc (node-right node))
+		(proc (node-datum node))))
+		
+(define (write-node node) (write (node-datum node)))
+;; (tree-for-each write-node tree) pre-order is standard
+
+(define (make-Q)
+  (let ((q (make-vector 0)))
+    (lambda (message . args)
+      (case message
+        ((empty?) (vector-empty? q))
+        ((top) (if (vector-empty? q) (error  'Q:top:empty q) (vector-ref q 0)))
+        ((push) (unless (null? (car args)) (vector-push q (car args)))) ;; dont push null's
+        ((pop) (if (vector-empty? q) (error 'Q:pop:empty q) (vector-shift q)))
+        ((to-list) (vector->list q))
+        ((from-list) (set! q (list->vector (car args))) q )
+        (else (info 'make-Q) (error  "Q:bad message:" message )))))) ; display info if unknown message
+        
+        
+    (define (bin-tree-level-order proc tree)
+    (let ((q (make-Q)) (node null))
+    (q 'push tree)
+    (while (not (q 'empty?))
+    	(set! node (q 'pop))
+    	(proc (node-datum node))
+    	(q 'push (node-left node))
+    	(q 'push (node-right node)))))
+    	
+    	
+
+		
+
+		
+(display "usage: (make-tree/nums [n])"  "color:green")
+(display "usage: (tree-print <tree>)"  "color:blue")
+
+(display "usage: (make-bin-tree/names)"  "color:green")
+(display "usage: (make-bin-tree/nums [n])"  "color:green")
+(display "usage: (bin-tree-print <tree>)" "color:blue")
+
+		
+		
+		
+

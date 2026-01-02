@@ -1,0 +1,95 @@
+;; http://rosettacode.org/wiki/Set_of_real_numbers
+(lib 'match) ;; reader-infix macros
+
+;;The following operations applies to ANY subset of ℜ defined by a predicate.
+
+(reader-infix '∈ )
+(reader-infix '∩ )
+(reader-infix '∪ )
+(reader-infix '⊖ ) ;; set difference
+ 
+(define-syntax-rule (∈ x a) (a x))
+(define-syntax-rule (∩ a b) (lambda(x) (and ( a x) (b x))))
+(define-syntax-rule (∪ a b) (lambda(x) (or ( a x) (b x))))
+(define-syntax-rule (⊖ a b) (lambda(x) (and ( a x) (not (b x)))))
+
+(define (∅ x) #f) ;; the empty set predicate
+(define (Z x) (integer? x))
+(define (N x) (and (Z x) (>= x 0)))
+(define (Q x) (rational? x))
+(define (ℜ x) #t)
+
+;; predicates to define convex sets
+(define (⟦...⟧ a b)(lambda(x) (and (>= x a) (<= x b))))
+(define (⟦...⟦ a b)(lambda(x) (and (>= x a) (< x b))))
+(define (⟧...⟧ a b)(lambda(x) (and (> x a) (<= x b))))
+(define (⟧...⟦ a b)(lambda(x) (and (> x a) (< x b))))
+
+{{out}}
+
+(3/7 ∈ ∅) → #f
+(3/7 ∈ Q) → #t
+(6.7 ∈ ℜ) → #t
+
+(define A (⟦...⟧ 2 10)) ; closed interval
+(define B (⟧...⟦ 5 15)) ; open interval
+
+(8 ∈ A) → #t
+(11 ∈ A)→ #f
+(define AB (A ∩ B))
+(8 ∈ AB) → #t
+(3 ∈ AB) → #f
+(5 ∈ AB) → #f ;; because B is ]5 .. 15]
+(define A-B (A ⊖ B))
+(5 ∈ A-B) → #t
+(-666 ∈ (⟧...⟧ -Infinity 0 ))   → #t
+
+;; task
+ (0 ∈ ((⟧...⟧ 0 1)  ∪  (⟦...⟦ 0 2))) → #t
+ (0 ∈ ((⟦...⟦ 0 2)  ∩  (⟧...⟧ 1 2))) → #f
+ (0 ∈ ((⟦...⟦ 0 3)  ⊖  (⟧...⟦ 0 1))) → #t
+ (0 ∈ ((⟦...⟦ 0 3)  ⊖  (⟦...⟧ 0 1))) → #f
+ (1 ∈ ((⟧...⟧ 0 1)  ∪  (⟦...⟦ 0 2))) → #t
+ (1 ∈ ((⟦...⟦ 0 2)  ∩  (⟧...⟧ 1 2))) → #f
+ (1 ∈ ((⟦...⟦ 0 3)  ⊖  (⟧...⟦ 0 1))) → #t
+ (1 ∈ ((⟦...⟦ 0 3)  ⊖  (⟦...⟧ 0 1))) → #f
+ (2 ∈ ((⟧...⟧ 0 1)  ∪  (⟦...⟦ 0 2))) → #f
+ (2 ∈ ((⟦...⟦ 0 2)  ∩  (⟧...⟧ 1 2))) → #f
+ (2 ∈ ((⟦...⟦ 0 3)  ⊖  (⟧...⟦ 0 1))) → #t
+ (2 ∈ ((⟦...⟦ 0 3)  ⊖  (⟦...⟧ 0 1))) → #t
+ 
+ 
+;; The following applies to convex sets ⟧...⟦ Cx, 
+;; and families F of disjoint convex sets.
+
+ (define-syntax-id _.lo [_ 0])
+ (define-syntax-id _.hi [_ 1])
+ 
+ ;; Cx-ops
+ (define (Cx-new lo hi) (if (< lo hi) (vector lo hi) Cx-empty))
+ (define (Cx-empty? A) (>= A.lo A.hi))  
+ (define  Cx-empty #(+Infinity -Infinity)) 
+ (define (Cx-inter A B) (Cx-new (max A.lo B.lo) (min A.hi B.hi))) ;; may be empty
+ (define (Cx-measure A)  (if (< A.lo A.hi) (- A.hi A.lo) 0))
+ 
+ ;; Families ops
+ (define (CF-measure FA) (for/sum ((A FA)) (Cx-measure A))) ;; because disjoint
+ ;; intersection of two families
+ (define (CF-inter FA FB) (for*/list ((A FA)(B FB)) (Cx-inter A B)))
+ ;; measure of FA/FB = m(FA) - m (FA ∩ FB)
+ (define (CF-measure-FA/FB FA FB)
+ 	(- (CF-measure FA) (CF-measure (CF-inter FA FB))))
+ 
+ ;; Application :
+ (define FA
+ 	(for/list ((n 100)) (Cx-new (sqrt (+ n (// 6))) (sqrt (+ n (// 5 6))))))
+ (define FB 
+ 	(for/list ((n 10)) (Cx-new (+ n (// 6)) (+ n (// 5 6)))))
+ 	
+ (CF-measure-FA/FB FA FB)
+      → 2.075864841184666
+ 	
+;; measure (FA - FB) = measure (FA) - measure (FA ∩ FB)
+
+ 
+ 

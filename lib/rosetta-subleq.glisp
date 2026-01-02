@@ -1,0 +1,36 @@
+;; http://rosettacode.org/wiki/Subleq
+
+(define (A  ic) (vector-ref M ic))
+(define (B  ic) (vector-ref M (1+ ic))
+(define (C  ic) (vector-ref M (+ ic 2))
+
+(define M #(5 17 -1 17 -1 -1 16 1 -1 16 3 -1 15 15 0 0 -1 72 101 108 108 111 44 32 119 111 114 108 100 33 10 0))
+
+(define IC 0)
+
+
+;; http://rosettacode.org/wiki/Sum_multiples_of_3_and_5
+(lib 'math)
+(lib 'sequences)
+
+(define (task n  (k 3)  (p 5 ))
+	 (when (!= (gcd k p) 1) (error "expected coprimes" (list k p)))
+		(- 
+	 		(+ (sum/mults n k) (sum/mults n p)) 
+	 		(sum/mults n (* k p))))
+
+
+;; sum of multiples of k < n 
+(define (sum/mults n k)
+	(sum/when (rcurry divides? k) [1 .. n]))
+
+
+
+;; using simple arithmetic
+;; sum of multiples of k < n 
+;; return  k*m*(m+1)/2 where m = floor(n/k)
+;; 🎩 young Gauss formula
+(define (sum/mults n k)
+	(set! n (quotient (1- n) k))
+	(/ (* k n (1+ n )) 2))
+		

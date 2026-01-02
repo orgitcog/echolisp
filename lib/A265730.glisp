@@ -1,0 +1,46 @@
+;; https://oeis.org/A265730
+
+	
+(define (digits a b (d)  (as))  ; a < b
+	(while (> a b) (set! b (* b 10)))
+	(make-set
+	(append
+	(for/list ((_ 999))
+		(set! d (quotient a b))
+		(set! a (* 10 (modulo a b)))
+		;; (writeln a b as)
+		 #:break (or (zero? a) (member a as)) 
+		;; (writeln '->  a b d )
+		(set! as (cons a as))
+		d )
+	d)))
+	
+(define (cut num (a) (b) (ds))
+	(define numlist (make-set (number->list num)))
+	(define numstr  (number->string num))
+	(define lg (string-length numstr))
+
+	(and
+		(not (member 0 numlist))
+	
+	(for/and ((i (in-range (1- lg) 0 -1)))
+	(set! a (string->number (take numstr i)))
+	(set! b (string->number (substring numstr ( - i lg))))
+	(if (= b 1)
+		(set! ds (make-set (number->list a)))
+		(set! ds (digits a b)))
+;;	(writeln num a b)
+	(set-subset? ds numlist))))
+	
+(define (palin n) (list->number (reverse (number->list n))))
+		
+(for ((n (in-range 1234567000 (+ 1234567000 1000))))
+	(when    (cut n)   (writeln '--> n  (prime? n))))
+
+
+	(when (and (cut n)  (cut (palin n))) (writeln '--> n  (palin n) (prime? n))))
+	
+mirroirs 
+-->     9999999494     4949999999    
+-->     9999999899     9989999999    
+[

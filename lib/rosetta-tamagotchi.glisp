@@ -1,0 +1,82 @@
+;; http://rosettacode.org/wiki/Tamagotchi_emulator
+;;
+
+(require 'struct)
+(string-delimiter "")
+
+(struct tamagotchi (name age food poop bored))
+
+;; preferences
+(define albert (my-tamagotchi
+
+
+(define (run-tamagotchi)
+	(define tama (local-get-value "TAMA"))
+	(if (null? tama) (writeln "Please (make-tamagotchi <name>)")
+	(lambda-tamagotchi (tamgotchi-name tama) tama)))
+		
+	
+
+(define-syntax-rule (make-tamagotchi name) (define name (lambda-tamagotchi 'name))) ;; user
+
+(define (lambda-tamagotchi name (tama null))
+(when (null? tama) (set! tama (tamagotchi name 0 0 0 0)))
+
+(lambda (action  (verbose #t))
+	(case action
+	((feed) (set-tamagotchi-food! tama  (1+  (tamagotchi-food tama))))
+	((talk) (set-tamagotchi-bored! tama (max 0 (1- (tamagotchi-bored tama)))))
+	((clean) (set-tamagotchi-poop! tama (max 0 (1- (tamagotchi-poop tama)))))
+	((look)  (writeln (tama-status tama)))
+	((cycle) (tama-cycle tama))
+	(else (writeln "actions: feed/talk/clean/look")))
+	
+	(local-put-value "TAMA" tama)
+	(when verbose (tama-health tama))))
+	
+(define (tama-cycle tama)
+		(when (tama-alive tama)
+		(set-tamagotchi-age! tama (1+ (tamagotchi-age tama)))
+		(set-tamagotchi-bored! tama (+ 1  (tamagotchi-bored tama) (random 2)))
+		(set-tamagotchi-food! tama  (max 0 (-  (tamagotchi-food tama) 2)))
+		(set-tamagotchi-poop! tama  (+  1 (tamagotchi-poop tama) (random 2)))))
+		
+(define (tama-sick tama) 	
+	 (+ (tamagotchi-poop tama) 
+	    (tamagotchi-bored tama) 
+	    (max 0 (- (tamagotchi-age tama) 32)) ;; die at 42
+	    (abs (-  (tamagotchi-food tama) 2))))
+	    
+(define (tama-alive tama)
+		(<= (tama-sick tama) 10))
+	
+(define (icons list num)
+		(for/fold (str "  ") ((i [in-range 0 num] )) 
+		(string-append str (list-ref list (random (length list))))))
+	
+(define (tama-status tama)
+	(if(tama-alive tama)
+		(string-append 
+		" [ "
+		(icons '(💤  💭  😴  😵 ) (tamagotchi-bored tama))  
+		(icons  '(🍼 🍔 🍟 🍰  🍜 ) (tamagotchi-food tama))
+		(icons '(💩) (tamagotchi-poop tama))
+		" ]")
+	"" ))
+	
+(define (tama-health tama)
+	(define sick (tama-sick tama))
+	(writeln 'health:sick°= sick)
+	(string-append 
+	(format "%a (%d)  " (tamagotchi-name tama)(tamagotchi-age tama))
+	(cond 
+	([<= sick 2]   (icons '(😄  😃  😀 😊  😎️  👍 ) 1 ))  ;; ok <= 3
+	([<= sick 5]   (icons '(😪  😥  😰  😓  😩  😫  😱 )  1))
+	([<= sick 10]  (icons '(😡 ) 1)) ;; very bad
+	(else  (icons '(❌  💀  👽  😇 ) 1)))
+    (tama-status tama)))
+	
+	
+	
+	
+	

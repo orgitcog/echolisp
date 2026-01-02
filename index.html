@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+
+<title>EchoLisp</title>
+
+	<meta NAME = 'description' CONTENT = "EchoLisp : Lisp in your browser - Lisp/Scheme framework written in javascript." >
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+	<META NAME="keywords"  CONTENT="echolisp,lisp,scheme,oulipo,framework,development,webapp,browser,list,lists,functional,environment,programming,webapp,racket,javascript,recursion,tail,optimization,language,langage,oeis,sequences,plot,complex,function,echolalie, georges, brougnard,tramu,cruches,zen">
+	<META NAME="AUTHOR" CONTENT="www.echolalie.com Jacques Tramu">
+	<META HTTP-EQUIV="CONTENT-LANGUAGE" CONTENT="fr">
+	<META NAME="COPYRIGHT" CONTENT="(c) 2015,Georges Brougnard">
+	<META NAME="Identifier-URL" CONTENT="http://www.echolalie.org/echolisp/">
+	<META NAME="document-class" CONTENT="Published">
+	<META NAME="document-rights" CONTENT="Private">
+	<META HTTP-EQUIV="Ranking" CONTENT="High, TOP">
+	<META NAME="Reply-to" CONTENT="echolalie@echolalie.com">
+	<META NAME="robots" CONTENT="index, follow">
+	<META NAME="Distribution" CONTENT="GENERAL, GLOBAL, ALL">
+	<meta http-equiv="robots" CONTENT="all">
+	
+	<meta name="viewport" content="width=device-width, initial-scale=1 maximum-scale=1 user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+
+	<link rel="icon" href="favicon.ico" type="image/x-icon" />
+	<link type="text/css" rel = 'stylesheet' href="./css/glisp.css"  media = 'screen'/>
+	
+<link type="text/css" rel = 'stylesheet' href="./css/mathbox.css"  media = 'screen'/>
+
+<script>
+	
+// language 
+	if (navigator.browserLanguage)
+	var language = navigator.browserLanguage;
+	else
+	var language = navigator.language; 
+	if(language && language.indexOf('fr') > -1) language = 'fr' ;
+	else language = 'en' ;
+
+</script>
+
+	<script type="text/javascript" src="./js/book.js"></script>
+	<script type="text/javascript" src="./js/mathrandom.js"></script>
+	<script type="text/javascript" src="./js/math.js"></script>
+
+	<script type="text/javascript" src="./js/localdb.js"></script>
+	<script type="text/javascript" src="./js/error.js"></script>
+	<script type="text/javascript" src="./js/sysfun.js"></script>
+	
+	<script type="text/javascript" src="./js/core.js"></script>
+	<script type="text/javascript" src="./js/eval.js"></script>
+	<script type="text/javascript" src="./js/macros.js"></script>
+
+	<script type="text/javascript" src="./js/reader.js"></script>
+	<script type="text/javascript" src="./js/io.js"></script>
+	<script type="text/javascript" src="./js/glisp.js"></script>
+	<script type="text/javascript" src="./js/strings.js"></script>
+	<script type="text/javascript" src="./js/rational.js"></script>
+	<script type="text/javascript" src="./js/vector.js"></script>
+	<script type="text/javascript" src="./js/complex.js"></script>
+	<script type="text/javascript" src="./js/streams.lib.js"></script>
+	<script type="text/javascript" src="./js/usage.lib.js"></script>
+	
+</head>
+
+<body>
+<div id = "plotwrapper" style="display:none" data-hidden="true" >
+
+<div id = "plot3dbuttons" style="display:block" data-hidden="false"  > 
+<span    onclick ="_plot_3d_hide()"
+				title= "............ Hide 3D plotter">⚪️</span>
+<span  class = "cbutton"  onclick ="_plot_3d_align()" 
+				title= "...........Rotate to (0,0,0)">↩️</span> 
+<span  class = "cbutton"  onclick ="_plot_3d_clock()" 
+				title= "...........Start/Stop clock">🎬 </span> 
+<span  class = "cbutton"  onclick ="_plot_3d_sliders_toggle()" 
+				title= "...........Show/hide 3D controls">🎨</span> 
+<span  style= "float:right;margin-right:4px"  onclick ="_plot_3d_hide()"
+				title= "............ Hide 3D plotter">⚪️</span>
+</div>
+
+<div id = "plot3dsliders" style="display:none" data-hidden="false"> 
+<br>
+<span class="slabel" for=s0  title = "time value">⌚️</span>
+<input title = "........... time value [0.0]" class ="slider" type=range min=0 max=1 value="0" step= 0.02 
+onchange="do3DTimeSlider(this,0,this.value)">
+<br><br>
+
+<span title = "........... Hue rotate" class="slabel" >🌈</span>
+<input title = "........... Hue rotate [0.0]" class ="slider" type=range min=0 max=1 value="0.0" step= 0.02 oninput="do3DSlider(this,1,this.value)">
+
+<br>
+<span title = "........... Gamma adjust" class="slabel" >&Gamma;</span>
+<input title = "........... Gamma adjust [0.5]" class ="slider" type=range min=0 max=1 value="0.5" step= 0.02 oninput="do3DSlider(this,2,this.value)">
+
+<br><br>
+<span title = "........... Hue adjust" class="slabel" >H</span>
+<input title = "........... Hue adjust [0]" id=s4 class ="slider" type=range min=0 max=1 value="0.5" step= 0.02 oninput="do3DSlider(this,3,this.value)">
+
+<br>
+<span title = "........... Saturation adjust" class="slabel" >S</span>
+<input title = "........... Saturation adjust [0.5]"  class ="slider" type=range min=0 max=1 value="0.5" step= 0.02 oninput="do3DSlider(this,4,this.value)">
+
+<br>
+<span title = "........... Brightness adjust" class="slabel" >💡</span>
+<input title = "........... Brightness adjust [0.5]"  class ="slider" type=range min=0 max=1 value="0.5" step= 0.02 oninput="do3DSlider(this,5,this.value)">
+
+<br>
+<span title = "........... Contrast adjust" class="slabel" >🌟</span>
+<input title = "........... Contrast adjust [0.5]"  class ="slider" type=range min=0 max=1 value="0.5" step= 0.02 oninput="do3DSlider(this,6,this.value)">
+
+
+<br><br>
+<span title = "........... Gray Image" class="slabel">◐</span>
+<input title = "........... Gray adjust [0.0]" class ="slider" type=range min=0 max=1 value="0.0" step= 0.02 oninput="do3DSlider(this,7,this.value)">
+
+<br>
+<span title = "........... Pixelate" class="slabel" >🎃</span>
+<input title = "........... Pixels adjust [0.0]" class ="slider" type=range min=0 max=1 value="0.0" step= 0.02 oninput="do3DSlider(this,8,this.value)">
+<br><br>
+<span title = "........... X Scale" class="slabel">X</span>
+<input title = "......... X scale adjust [0.5]" class ="slider" type=range min=0 max=1 value="0.5" step= 0.02 oninput="do3DScaleSlider(this,9,this.value)">
+<span title = "........... Y Scale" class="slabel">Y</span>
+<input title = "......... Y scale adjust [0.5]" class ="slider" type=range min=0 max=1 value="0.5" step= 0.02 oninput="do3DScaleSlider(this,10,this.value)">
+<span title = "........... Z Scale" class="slabel">Z</span>
+<input title = "......... Z scale adjust [0.5]" class ="slider" type=range min=0 max=1 value="0.5" step= 0.02 oninput="do3DScaleSlider(this,11,this.value)">
+<br><br>
+<span title = "........... Alpha rotation" class="slabel">&alpha;</span>
+<input title = "......... Alpha rotation adjust [0.5]" class ="slider" type=range min=0 max=1 value="0.5" step= 0.02 oninput="do3DRotationSlider(this,12,this.value)">
+<span title = "........... Beta rotation" class="slabel">&beta;</span>
+<input title = "......... Beta rotation adjust [0.5]" class ="slider" type=range min=0 max=1 value="0.5" step= 0.02 oninput="do3DRotationSlider(this,13,this.value)">
+<span title = "........... Gamma rotation" class="slabel">&gamma;</span>
+<input title = "......... Gamma rotation adjust [0.5]" class ="slider" type=range min=0 max=1 value="0.5" step= 0.02 oninput="do3DRotationSlider(this,14,this.value)">
+<br>
+<span  class = "cbutton" onclick ="do3DSliderReset()">Reset</span>
+<br>
+<br>
+<select id = "select-3d-param"  class = "ui-3d-select" onchange = "__3d_ui_select_param()">
+	<option>- param/values -</option>
+	<option>ambient-color</option>
+	<option>anim-bounce</option>
+	<option>anim-rotate</option>
+	<option>anim-scale</option>
+	<option>axis</option>
+	<option>background</option>
+	<option>ball-color</option>
+	<option>ball-material</option>
+	<option>ball-repeat</option>
+	<option>ball-texture</option>
+	<option>cube-color</option>
+	<option>cube-material</option>
+	<option>cube-repeat</option>
+	<option>cube-texture</option>
+	<option>controls</option>
+	<option>directional-color</option>
+	<option>directional-lights</option>
+	<option>light-alpha</option>
+	<option>light-theta</option>
+	<option>material</option>
+	<option>material-color</option>
+	<option>point-color</option>
+	<option>point-lights</option>
+	<option>plane-color</option>
+	<option>plane-repeat</option>
+	<option>plane-texture</option>
+	<option>plane-width</option>
+	<option>plane-x</option>
+	<option>plane-y</option>
+	<option>plane-z</option>
+	<option>segments</option>
+	<option>shadow</option>
+	<option>shininess</option>
+	<option>specular-color</option>
+	<option>spot-color</option>
+	<option>spot-lights</option>
+	<option>texture</option>
+	<option>texture-repeat</option>
+	<option>tminmax</option>
+	<option>transform</option>
+	<option>uminmax</option>
+	<option>view_angle</option>
+	<option>wireframe</option>
+	<option>xminmax</option>
+	<option>zgrid</option>
+</select>
+
+<input type=text id = "select-3d-value" class = "ui-3d-value" onchange = "__3d_ui_select_value()" >  </textarea>
+</div> <!-- END 3D  SLIDERS -->
+
+<div id = "plot3d"  style="display:block" data-hidden="false" > 
+<!--- renderer goes here -->
+</div>
+</div>
+
+
+<div id = "page">
+<img id = "logo" class="logo"  width = "32" height = "32" src = "./images/b7.jpg" alt = "EchoLisp" title  = "    OK, Error or Busy indicator">
+<h1>EchoLisp</h1>
+
+<!-- MESSAGES -->
+<div id="overlay" class = "overlay">
+<div id = "dlgTitle">&nbsp;</div>
+  <div>
+   <center>
+   <img id = "dlgImg"  src = "./images/b4.png" width = "40" height = "40">
+   </center>
+   <p id="dlgMsg">Content Goes Here</p>
+   <input id="overlay-btn"
+       type="button"
+       value="X"
+       onclick="dlgHide()" />
+  </div>
+</div>
+
+<div id = "bulle" class = "bulle">
+    <div id = "bulleMsg">&nbsp;</div>
+</div>
+<!-- END MESSAGES -->
+
+
+<div class = "buttons">
+<span>
+<span id = "worksheet" style="font-weight: bold">worksheet-1</span>
+<span id = "edited" style="font-size: 0.6em">&nbsp;</span>
+</span>
+<span id = "HELP" class = "hbutton" style= "cursor:help" onclick ="doButton('HELP')" 
+	title= "Help">Help</span>
+<span id = "RESET" class = "xbutton" onclick ="doButton('RESET')" 
+	title= "Restart from scratch">Reset</span>
+<span id = "LOAD" class = "hbutton"  onclick ="fileSelect()" 
+	title= "Load/Eval a source file : *.glisp, *scm, ...">Load</span>
+<span id = "SAVE" class = "hbutton" onclick ="doButton('SAVE')" 
+	title= "Save worksheet">Save</span>
+<span id = "EVAL" class = "hbutton" onclick ="doButton('EVAL')" 
+	title= "Evaluate ALL cells">Eval</span>
+<span id = "NEW" class = "hbutton" onclick ="doButton('NEW')" 
+	title= "New worksheet">New</span>
+<select id = "SELECT"  class = "selbutton" onchange = "doSelectOpen()" 
+	title = "Open a worksheet from (notebook)">
+	<option value="" style= "text-align:center">Open</option> 
+	<option value="" >&nbsp;</option>
+</select>
+</div>
+
+<div style="clear:both"></div>
+<br>
+
+<!-- CELLS -->
+<div class = "cells" id = "cells">
+
+<div id="cell-0" class = "cell" data-plotter = "plotter-id" data-hidden = "false" >
+
+<div   class = "cellbuttons">
+<span  class = "cbutton"  onclick ="cell_toggle_mode(this)" 
+				title= "........... Toggle console or standard cell">📠 </span>
+<span  class = "cbutton"  onclick ="cell_eval(this)" 
+				title= "............ Eval this cell. Same as [SHIFT]+[ENTER]">❗️</span>
+<span  class = "cbutton"  onclick ="cell_add(this)"  
+				title= "............ Add a cell">➕ </span>
+<span  class = "cbutton"  onclick ="cell_toggle_plotter(this)" 
+				title= "........... Show/hide plotter">📊 </span>
+<span  class = "cbutton"  onclick ="cell_clear(this)" 
+				style = "font-weight:bold" 
+				title= "............ Clear input/output - Same as [ESC] key.">x</span>
+				
+<span style="font-size:10px;color:gray;">&nbsp;</span>
+
+<span  onclick ="cell_remove(this)"
+				style= "float:right;margin-right:4px;font-size:12px"
+				title= "............ Delete this cell">⛔ </span>
+<span  onclick ="cell_min_max(this)"
+				style= "float:right;margin-right:4px;font-size:12px"
+				title= "............ 🔵 Show / ⚪️ hide this cell">⚪️&nbsp;</span>
+<span  onclick ="_plot_3d_show()"
+				style= "float:right;margin-right:4px"
+				title= "............ 🎥 Show 3D Plotter">🎥 &nbsp;</span>
+</div>
+
+
+<!-- WRAPPER = INPUT CELL -->
+<div  id = "wrapper" class="wrapper" style = "display:block"  data-hidden = "false">
+<textarea id = 'stdin'  type= 'text' class = "stdin" data-name = 'stdin' value = ''  
+	spellcheck = "false"
+	placeholder = '>'  
+	onfocus = "set_stdin(this)"
+	onclick = "stdin_adjust();"
+	title= "EchoLisp instruction(s)">
+</textarea>
+
+<div id = "hiliter" class= "hiliter" 
+	readonly = "readonly"  spellcheck = "false">&nbsp;</div>
+</div> <!-- END WRAPPER = INPUT CELL -->
+
+<div data-name="ui" class = "ui" style = "display:none" onclick = "ui_top_click(event,this)" data-hidden= "false">
+</div>
+
+<div id = "stdout" data-name = "stdout" class="stdout" style = "display:block"  
+		data-hidden = "false"
+		readonly = "readonly" 
+		onclick = "stdout_click(event,this)"
+		onmousemove= "stdout_move(event,this)">
+EchoLisp 💭 
+</div>
+
+<div data-name="xstdout" class = "xstdout" style = "display:none" 
+	title = " ..... click to expand"
+	onclick = "xstdout_hide(this)">
+&nbsp; 
+</div>
+
+</div> <!-- END CELL0 -->
+</div>  <!-- END CELLS -->
+
+<div id = "info" title = "text-info">&nbsp;</div>
+
+<div id = "footer"  class="footer">
+<a href="http://www.echolalie.org/echolisp/help.html">EchoLisp</a>  V4.5 - © Echolalie, 2015/2016 - 
+&nbsp;<a href="mailto:echolalie@echolalie.com?subject=EchoLisp" title = "Ecrire">[Mail]</a>
+</div>
+
+</div> <!-- PAGE -->
+
+<!-- GRAPH -->
+<div class = "graph"  id = 'graph0' data-name = 'graph' style="display:none" data-hidden="true">
+<div class = "hsliders" data-name = "hsliders" onclick = "hsliders_click(this)">⚪️</div>
+<div class = "sliders" data-name = "sliders">
+<br>
+<span class="slabel" for=s0  title = "time value">⌚️</span>
+<input title = "time value" class ="slider" type=range min=0 max=1 value="0" step= 0.02 
+onchange="doSlider(this,0,this.value)">
+<br><br>
+
+<span title = "Hue rotate" class="slabel" >&#x1F308;</span>
+<input title = "Hue rotate" class ="slider" type=range min=0 max=1 value="0.0" step= 0.02 onchange="doSlider(this,1,this.value)">
+
+<br>
+<span title = "Hue adjust" class="slabel" >H</span>
+<input title = "Hue adjust" id=s4 class ="slider" type=range min=0 max=1 value="0.5" step= 0.02 onchange="doSlider(this,2,this.value)">
+
+<br>
+<span title = "Light adjust" class="slabel" >L</span>
+<input title = "Light adjust" class ="slider" type=range min=0 max=1 value="0.5" step= 0.02 onchange="doSlider(this,3,this.value)">
+
+<br>
+<span title = "Saturation adjust" class="slabel" >S</span>
+<input title = "Saturation adjust"  class ="slider" type=range min=0 max=1 value="0.5" step= 0.02 onchange="doSlider(this,4,this.value)">
+
+<br>
+<span title = "Brightness adjust" class="slabel" >B</span>
+<input title = "Brightness adjust"  class ="slider" type=range min=0 max=1 value="0.5" step= 0.02 onchange="doSlider(this,5,this.value)">
+
+<br>
+<span title = "Pixelate" class="slabel" for=s6>&#x2728;</span>
+<input title = "Pixels adjust" class ="slider" type=range min=0 max=1 value="0.0" step= 0.02 onchange="doSlider(this,6,this.value)">
+
+<br><br>
+<span title = "Zoom" class="slabel" for=s6>&#x1F50E;</span>
+<input title = "Zoom adjust"  class ="slider"  type=range min=0 max=1 value="0.5" step= 0.02 onchange="doSlider(this,7,this.value)">
+
+<br>
+<span  class = "hbutton" onclick ="doPlotReset(this)">Reset</span>
+&nbsp;
+<br>
+<span class="stext" id = "xscale">x</span>
+<br>
+<span class="stext" id = "yscale">y</span>
+<br>
+<span class="stext" id = "mouse"><b>f(x)</b></span>
+<br>
+</div> <!-- END SLIDERS -->
+
+<canvas class = "plotter"  style="cursor:crosshair" data-name = "canvas"  width="410" height="410"  >Canvas not supported</canvas>
+
+</div> <!-- END GRAPH -->
+
+
+<input id = "FILES"   type = "file" multiple = "" 
+	accept = ".txt,.js,.glisp,.scm,.xml,.htm,.html,.csv,.json"
+	style="display:none"  onchange="handleFiles()">
+
+<audio id='audio' style="display:none" controls="controls">
+  <source src="./sounds/ring2.mp3"  type="audio/mp3">
+  </audio>
+  
+
+<!--
+<br>
+<small><small>
+<div><a href='http://www.hit-counts.com'><img src='http://www.hit-counts.com/counter.php?t=MTM1NTU1Ng==' border='0'  height= "16" alt='Hit Counter'></a><BR><a href='http://www.hit-counts.com'>List counter</a></div>
+</small></small>
+-->
+
+
+
+</body>
+</html>
+

@@ -1,0 +1,24 @@
+;; http://rosettacode.org/wiki/Percolation/Mean_cluster_density
+
+
+
+(define (init-C (n 400) ( p 0.5))
+	(plot-size n n)
+	(define-global 'C (pixels->uint32-vector ))
+	(pixels-map (lambda (x y) (if (< (random) p) -1 0 )) C))
+
+(define hidx 0)
+
+(define (new-color)
+	(hsv->rgb (random) 1 1))
+	
+(define (in-region C x y)
+	(= (pixel-ref C x y) -1))
+	
+(define (make-cluster x0 y0)
+		(when (= (pixel-ref C x0 y0) -1) 
+				(pixel-set! C x0 y0 (new-color))
+				(make-region in-region C x0 y0)))
+		
+(define make-clusters
+	(pixels-map make-cluster C))

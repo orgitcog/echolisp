@@ -1,0 +1,205 @@
+
+Domaine : www.magenia.com
+
+Depuis quelque temps nous recevons des "fiches de renseignement" vides correspondant ‡ l'activation du script 
+
+===============  FICHE OK ==================
+
+From - Sun Feb  7 19:57:20 2016
+X-Account-Key: account3
+X-UIDL: 1454871384.427.atl4mail18,S=2339
+X-Mozilla-Status: 0001
+X-Mozilla-Status2: 00000000
+X-Mozilla-Keys: $label3                                                                         
+Return-Path: <webmaster@magenia.com>
+Delivered-To: jacques.tramu@698997.712910
+Received: (qmail 421 invoked by uid 78); 7 Feb 2016 18:56:24 -0000
+Delivered-To: echolalie.com-echolalie@echolalie.com
+Received: (qmail 416 invoked by uid 0); 7 Feb 2016 18:56:24 -0000
+Received: from unknown (HELO atl4mhib70.myregisteredsite.com) (209.17.115.205)
+  by 0 with SMTP; 7 Feb 2016 18:56:24 -0000
+Received: from smtp-imu4.infomaniak.ch (smtp-imu4.infomaniak.ch [84.16.68.112])
+	by atl4mhib70.myregisteredsite.com (8.14.4/8.14.4) with ESMTP id u17IuKTl012523
+	for <echolalie@echolalie.com>; Sun, 7 Feb 2016 13:56:20 -0500
+Received: from imu309.infomaniak.ch (imu309.infomaniak.ch [84.16.80.114])
+	by smtp-imu4.infomaniak.ch (8.14.5/8.14.5) with ESMTP id u17IuJCe012049
+	for <echolalie@echolalie.com>; Sun, 7 Feb 2016 19:56:19 +0100
+Received: from imu309.infomaniak.ch (localhost [127.0.0.1])
+	by imu309.infomaniak.ch (8.14.2/8.14.2) with ESMTP id u17IuJIK007352
+	for <echolalie@echolalie.com>; Sun, 7 Feb 2016 19:56:19 +0100
+Received: (from httpd@localhost)
+	by imu309.infomaniak.ch (8.14.2/8.14.2/Submit) id u17IuIWe007350;
+	Sun, 7 Feb 2016 19:56:18 +0100
+Date: Sun, 7 Feb 2016 19:56:18 +0100
+Message-Id: <201602071856.u17IuIWe007350@imu309.infomaniak.ch>
+To: echolalie@echolalie.com
+Subject: Fiche de renseignement
+Content-type:text/html
+From:armandlepeltier@gmail.com
+X-SpamScore: 2.8
+X-MailHub-Apparently-To: echolalie@echolalie.com
+
+
+	<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+	<html>
+	<head>
+	<title>Untitled Document</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+	<style type="text/css">
+	<!--
+	.style5 {	color: #A29785;
+		font-weight: bold;
+	}
+	.style7 {	font-size: 10px;
+		font-weight: bold;
+		font-style: italic;
+	}
+	-->
+	</style>
+	</head>
+	
+	<body>
+	Nom : lepeltier<br>
+	Pr&eacute;nom : armand<br>
+	Nationalit&eacute; : fran√ßais<br>
+	Adresse de r&eacute;sidence : <br>
+	T&eacute;l&eacute;phone : 0631076132<br>
+	Email : armandlepeltier@gmail.com<br> <===== obligatoire
+	Niveau d'&eacute;tudes : <br>
+	Profession : <br><br>
+	Vous &ecirc;tes int&eacute;ress&eacute; par :<br>  - La formation professionnelle<br>  - Les stages<br>  - Ne sait pas encore<br>	<br>  
+	Quels ateliers compl&eacute;mentaires souhaitez-vous suivre :<br>  - Danse Contemporaine<br>  - Theatre<br>  - Ne sait pas encore<br>  <br>
+	Message : Merci
+	</body>
+	</html>
+	
+	
+	
+	================== FICHE VIDE ========================
+
+X-Account-Key: account5
+X-Mozilla-Keys:                                                                                 
+Return-Path: <webmaster@magenia.com>
+Received: from mta-gw18.infomaniak.ch (mta-gw18.infomaniak.ch [84.16.68.79])
+	by mda277.infomaniak.ch (8.14.5/8.14.5) with ESMTP id u18GYmxH003033
+	for <contact@magenia.com>; Mon, 8 Feb 2016 17:34:48 +0100
+Received: from smtp-imu4.infomaniak.ch (smtp-imu4.infomaniak.ch [84.16.68.112])
+	by mta-gw18.infomaniak.ch (8.14.5/8.14.5) with ESMTP id u18GYmeY016806
+	for <contact@magenia.com>; Mon, 8 Feb 2016 17:34:48 +0100
+Received: from imu309.infomaniak.ch (imu309.infomaniak.ch [84.16.80.114])
+	by smtp-imu4.infomaniak.ch (8.14.5/8.14.5) with ESMTP id u18GYm3g001283
+	for <contact@magenia.com>; Mon, 8 Feb 2016 17:34:48 +0100
+Received: from imu309.infomaniak.ch (localhost [127.0.0.1])
+	by imu309.infomaniak.ch (8.14.2/8.14.2) with ESMTP id u18GYmZV023754
+	for <contact@magenia.com>; Mon, 8 Feb 2016 17:34:48 +0100
+Received: (from httpd@localhost)
+	by imu309.infomaniak.ch (8.14.2/8.14.2/Submit) id u18GYm8W023753;
+	Mon, 8 Feb 2016 17:34:48 +0100
+Date: Mon, 8 Feb 2016 17:34:48 +0100
+From: webmaster@magenia.com    <<<<< ============================== ???????????????
+Message-Id: <201602081634.u18GYm8W023753@imu309.infomaniak.ch>
+To: contact@magenia.com
+Subject: Fiche de renseignement
+Content-type:text/html
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.2.7 (mta-gw18.infomaniak.ch [84.16.68.126]); Mon, 08 Feb 2016 17:34:48 +0100 (CET)
+X-Antivirus: Dr.Web (R) for Unix mail servers drweb plugin ver.6.0.2.8
+X-Antivirus-Code: 0x100000
+X-Infomaniak-Spam: ham
+X-Spam-Score: 0
+X-Spam-Detail: gggruggvucftvghtrhhoucdtuddrfeekjedrvdekgddtgecutefuodetggdotefrodftvfcurfhrohhfihhlvgemucfkpffhqffotefpkfetmfenuceurghilhhouhhtmecufedttdenucenucfjughrpeffhffkvffutgeshhdttddttddtudenucfhrhhomhepfigvsghmrghsthgvrhesmhgrghgvnhhirgdrtghomh
+
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Untitled Document</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style type="text/css">
+<!--
+.style5 {	color: #A29785;
+	font-weight: bold;
+}
+.style7 {	font-size: 10px;
+	font-weight: bold;
+	font-style: italic;
+}
+-->
+</style>
+</head>
+
+<body>
+Nom : <br> 
+Pr&eacute;nom : <<br>   <======================    ???????  ???????
+Nationalit&eacute; : <br>
+Adresse de r&eacute;sidence : <br>
+T&eacute;l&eacute;phone Fixe : <br>
+T&eacute;l&eacute;phone Mobile : <br>
+Email : <br> <========== ???? vide : ne peut etre lancÈ du navigateur
+Niveau d'&eacute;tudes : <br>
+Profession : <br><br>
+Vous &ecirc;tes int&eacute;ress&eacute; par :<br>	<br>  
+Quels ateliers compl&eacute;mentaires souhaitez-vous suivre :<br>  <br>
+Message : 
+</body>
+</html>
+
+
+==================== "VIEUX" 2007 mail.php sous root
+====================================================
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Untitled Document</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style type="text/css">
+<!--
+.style5 {	color: #A29785;
+	font-weight: bold;
+}
+.style7 {	font-size: 10px;
+	font-weight: bold;
+	font-style: italic;
+}
+-->
+</style>
+</head>
+
+<body>
+Nom : '.addslashes($nom).'<br>
+Pr&eacute;nom : <'.addslashes($prenom).'<br>
+Nationalit&eacute; : '.addslashes($nationalite).'<br>
+Adresse de r&eacute;sidence : '.addslashes($adresse).'<br>
+T&eacute;l&eacute;phone Fixe : '.addslashes($telephonefixe).'<br>
+T&eacute;l&eacute;phone Mobile : '.addslashes($telephonemobile).'<br>
+Email : '.addslashes($email).'<br>
+Niveau d\'&eacute;tudes : '.addslashes($etudes).'<br>
+Profession : '.addslashes($profession).'<br><br>
+Vous &ecirc;tes int&eacute;ress&eacute; par :<br>';
+if ($interesse_par_formation==1) $corps .= '  - La formation professionnelle<br>';
+if ($interesse_par_stages==1) $corps .= '  - Les stages<br>';
+if ($interesse_par_afdas==1) $corps .= '  - Un plan de formation AFDAS<br>';
+if ($interesse_par_ne_sait_pas_encore==1) $corps .= '  - Ne sait pas encore<br>';
+if ($interesse_par_a_preciser<>"") $corps .= '  - autre : '.addslashes($interesse_par_ne_sait_pas_encore).'<br>';
+$corps .= '	<br>  
+Quels ateliers compl&eacute;mentaires souhaitez-vous suivre :<br>';
+if ($ateliers_danse_contemporaine==1) $corps .= '  - Danse Contemporaine<br>';
+if ($ateliers_theatre==1) $corps .= '  - Theatre<br>';
+if ($ateliers_chant_lyrique_et_variete==1) $corps .= '  - Chant Lyrique et Variete<br>';
+if ($ateliers_ne_sait_pas_encore==1) $corps .= '  - Ne sait pas encore<br>';
+$corps .= '  <br>
+Message : '.addslashes($message).'
+</body>
+</html>
+';
+
+$entete="Content-type:text/html\nFrom:$email";
+
+mail ($to,$subjet,$corps,$entete);
+//mail ("rlewinger@lespritnet.com",$subjet,$corps,$entete);
+
+echo '<SCRIPT LANGUAGE="javascript">window.close();</SCRIPT>';
+
+?>

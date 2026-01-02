@@ -1,0 +1,126 @@
+;; http://clojuredocs.org/clojure.core/-%3E
+;; http://rosettacode.org/wiki/Category:Monads
+;; http://rosettacode.org/wiki/Monads/List_monad
+
+
+
+=={{header|EchoLisp}}==
+Our monadic lists will take the form (List a b c ...).
+<lang scheme>
+;; -> and ->> are the pipeline operators
+;; (-> x f g h) = (h (g ( f x)))
+;; (->> x f (g a) h) = (h (g a ( f x)))
+
+(define (List.unit elem)  (append '(List) elem))
+(define (List.bind xs f)  (List.unit (->> xs rest (map f)  (map rest) (apply append))))
+(define (List.lift f)     (lambda(elem) (List.unit (f elem))))
+
+(define List.square  (List.lift (lambda(x) (*  x x))))
+(define List.cube    (List.lift (lambda(x) (* x x x))))
+(define List.tostr   (List.lift number->string))
+
+;; composition
+
+(-> '(List 1 -2 3 -5) (List.bind List.cube) (List.bind List.tostr))
+    → (List "1" "-8" "27" "-125")
+;; or
+(-> '(1 -2 3 -5) List.unit (List.bind List.cube) (List.bind List.tostr))
+     → (List "1" "-8" "27" "-125")
+</lang>
+
+
+=={{header|EchoLisp}}==
+Our monadic Maybe elements will be pairs (boolean . value), where value is in Maybe.domain.
+Functions which return something not in Maybe.domain are unsafe and return (#f . input-value), If a function is given as input a (#f . value) element, it will return this element. 
+
+<lang scheme>
+(define (Maybe.domain? x) (or (number? x) (string? x)))
+(define (Maybe.unit elem (bool #t)) (cons bool elem))
+
+;; f is a safe or unsafe function
+;; (Maybe.lift f) returns a safe Maybe function which returns a Maybe element
+(define (Maybe.lift f)     
+		(lambda(x) 
+             (let [(u (f x))]
+             (if (Maybe.domain? u) 
+                (Maybe.unit u)
+                (Maybe.unit x #f))))) ;; return offending x
+                                
+                            
+;; elem = Maybe element
+;; f is safe or unsafe  (lisp) function
+;; return Maybe element
+(define (Maybe.bind f elem)  
+		(if (first elem) ((Maybe.lift f)  (rest elem)) elem))
+		
+;; pretty-print		
+(define (Maybe.print elem)
+		(if (first elem)  (writeln elem ) (writeln '❌ elem)))
+
+;; unsafe functions
+(define (u-log x) (if (> x 0) (log x) #f))
+(define (u-inv x) (if (zero? x) 'zero-div (/ x)))
+
+;; (print (number->string (exp (log 3))))
+(->> 3 Maybe.unit (Maybe.bind u-log) (Maybe.bind exp)  (Maybe.bind number->string) Maybe.print)
+    → (#t . "3.0000000000000004")    
+
+;; (print (number->string (exp (log -666))))
+(->> -666  Maybe.unit (Maybe.bind u-log) (Maybe.bind exp)  (Maybe.bind number->string) Maybe.print)
+     → ❌     (#f . -666)   
+      
+;; ;; (print (number->string (inverse (log 1))))
+(->> 1 Maybe.unit (Maybe.bind u-log)  (Maybe.bind u-inv)  (Maybe.bind number->string) Maybe.print)
+     →  ❌     (#f . 0)   
+</lang>
+
+=={{header|EchoLisp}}==
+Our monadic Writer elements will be pairs (string . value), where string is the log string.
+
+<lang scheme>
+(define (Writer.unit x (log #f)) 
+	(if log (cons log x)
+		(cons (format "init → %d" x) x)))
+
+;; f is a lisp function
+;; (Writer.lift f) returns a  Writer function which returns a Writer element
+
+(define (Writer.lift f name)     
+	(lambda(elem) 
+             (Writer.unit 
+             	(f (rest elem)) 
+                (format "%a \n %a  → %a" (first elem) name (f (rest elem))))))
+                            
+;; lifts and applies
+(define (Writer.bind f elem) ((Writer.lift f (string f)) elem))
+
+(define (Writer.print elem) (writeln 'result (rest elem)) (writeln (first elem)))
+		
+;; Writer monad versions
+(define w-root  (Writer.lift sqrt "root"))
+(define w-half  (Writer.lift (lambda(x) (// x 2)) "half"))
+(define w-inc  ( Writer.lift add1 "add-one"))
+
+
+;; no binding required, as we use Writer lifted functions
+(->  5 Writer.unit w-root w-inc w-half Writer.print)
+
+result 1.618033988749895    
+init → 5
+root → 2.23606797749979
+add-one → 3.23606797749979
+half → 1.618033988749895    
+
+;; binding
+(->>  0 Writer.unit (Writer.bind sin) (Writer.bind cos)  w-inc w-half Writer.print)
+
+result 1    
+init → 0
+sin → 0
+cos → 1
+add-one → 2
+half → 1    
+</lang>
+
+
+

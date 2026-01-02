@@ -1,0 +1,194 @@
+/*
+GLisp
+match.lib
+(C)  Georges Brougnard - 2015
+*/
+/*
+>  (match '( 1 2 3 4) [(list x y ... z)
+                      (list y x z)])
+'((2 3) 1 4)
+>  (match '( 1 2  4) [(list x y ... z)
+                      (list y x z)])
+'((2) 1 4)
+*/
+
+//  eg pattern = (5 x ... y) versus expr = ( 5 6 7 8 9 )
+// (match '(1 2 3 4 5 6 7 ) (( list x ... y ... z ) 666))
+
+function __list_match(expr,pattern,env) {
+var l, k , id, name , saved_env  ;
+	if(expr === null ) return (pattern === null);
+	if(pattern === null ) return (expr === null);
+//glisp_trace(expr,pattern,"-> list match");
+	id = pattern[0];
+	if(! __pat_match(expr[0],pattern[0],env)) return false;
+	// x := 6
+	if(isSymbol(id) && pattern[1] && pattern[1][0] === _ellipsis) { // try greedy
+		name = id.name;
+		pattern = pattern [1] ; // -> ( '...'  y)
+		pattern = pattern [1] ; // --> (y)
+		expr = expr[1]; // -> (7 8 9)
+		// try (_ _ _ y), (_ _ y), (_ y) (y)
+		
+		if(expr === null && pattern) return false;
+		if(pattern === null) { // matches to end
+			env.set(name, [env.get(name), expr]);
+//glisp_trace(name,env.get(name),"match::bind");
+			return true;
+			}
+		
+		l = _length(expr);
+		saved_env = env.save(); // save bindings
+		
+		// ( list-first lst length:0) = null   (list-first  lst length:lg) = list : a copy !!! 
+		// (list-tail lst pos:0 )= lst  (list-tail l (lg-1)) = last-item
+		
+		for(k =l-1; k >=0  ; k--) {
+		// save bindings NYI
+			if(__list_match(_list_tail(expr,k),pattern,env)) {
+				env.set(name, [env.get(name) , _sublist(expr,0,k)]) ;
+glisp_trace(name,env.get(name),"match::bind");
+				return true;
+			}
+		env.restore(saved_env);
+		} // k
+		return false;
+		} // ellipsis
+		return __list_match (expr[1],pattern[1],env); // cdr
+}
+
+// pat_match --> true|false and bindings
+function __pat_match (expr ,pattern,env) {
+	if(pattern === null && expr === null) return true ;
+	glisp_trace(expr,pattern,"-> pat match");
+
+	if(typeof pattern === "function"  
+			&& isSymbol(expr) 
+			&& expr.name === pattern.glfun.name)
+			return true;
+			
+	if(pattern instanceof Symbol) { 
+				var name = pattern.name;
+				if(name === "_") return true;
+// console.log("pat match",name,env.get(name));
+				if(env.get(name)) return __equal(env.get(name),expr) ; //already bound
+				env.set(name,expr) ;// bind
+glisp_trace(name,expr,"match::bind");
+				return true;
+				}
+				
+	if(isQuote(pattern)) return __equal (pattern[1][0], expr);
+				
+	if(isListNotNull(pattern) && isListNotNull (expr)) 
+	switch(pattern[0]) {
+		case _list : return __list_match(expr,pattern[1],env);
+		/*
+		case _or : return __or_match(expr,pattern,env) ;
+		case _and : return __and_match(expr,pattern,env) ;
+		*/
+		default : glisp_error (34,pat,"pattern-matcher"); // bad msg NYI
+		}
+	
+	return pattern === expr ; // terminal (number, ...)
+	// rational, etc.. see '=' (numeq) NYI - vectors itou
+} //pat_match
+
+
+/*
+pat :=  _ |  id | literal | (quote datum) | (list lvp ..) | (or pat ...) | NYI
+lvp := pat | pat ...
+*/
+function __pat_expand(pat,env) {
+var fun ;
+	if(pat === null) return null;
+	if(typeof pat === "number" || typeof pat === "string") return pat;
+	if(isSymbol(pat))  {
+						fun = glisp_look_sysfun(pat.name);
+						if(fun) return fun;
+						env.set(pat.name,undefined); 
+						return pat;
+						}
+	if(typeof pat === "function") return pat; // --> jsfun
+	if(isListNotNull(pat)) 
+		switch(pat[0]) {
+		case _quote : return pat;
+		case _list :
+		case _or :
+		case _and :
+			pats = pat[1];
+			while(pats) {pats[0] = __pat_expand(pats[0],env); pats = pats[1];}
+			return pat;
+		default : glisp_error(34,pat,"match-pattern"); // bad msg NYI
+		}
+	 glisp_error(34,pat,"match-pattern");
+} // pat_expand
+
+// replace if match found
+function __match_1(expr,clause,env)  {
+	if(notIsList(clause)) glisp_error(20,clause,"match");
+	var newenv = new GLenv(null,"M");
+	var pat = clause[0];
+	var body = clause[1];
+	var ret= null;
+	
+	pat = __pat_expand(pat,newenv) ;
+//glisp_trace(pat,"","pat-expand <--");
+	if( __pat_match(expr,pat,newenv)) {
+		 writeln("MATCH!"); 
+		 body = _syntax_match_replace_1 (body ,newenv) ;
+//glisp_trace(body,"","body-expand <--");
+		 while(body) {
+		 	ret = __eval(body[0],env);
+		 	body = body[1] ;
+		 	}
+		 return ret;
+		 } // match
+		 
+	return null;
+}
+
+/*
+(match-define pat expr)
+> (match-define (list a b) '(1 2))
+> b -> 2
+*/
+var _match_define = function (self, env) {
+	self = self[1];
+	var pat = self[0];
+	var expr = __eval(self[1][0],env);
+	var newenv = new GLenv(null,"M");
+	
+	pat = __pat_expand(pat,newenv) ;
+	// newen bindings --> into env
+	if( __pat_match(expr,pat,newenv)) 
+					env.merge(newenv);
+	return __void;		
+}
+
+/*
+(match val-expr clause ...)
+clause	 =	[pat body ...+]
+*/
+var _match = function (self, env) {
+if(! _ellipsis) _ellipsis = new Symbol("...") ; // read only NYI
+self= self[1];
+		var expr = __eval(self[0],env);
+		var clauses = self[1];
+		var res ;
+		while (clauses) {
+			res = __match_1 (expr,clauses[0],env);
+			if(res) return res;
+			clauses = clauses[1] ;
+			}
+	glisp_error(64,expr,"match"); // no match found
+}
+
+function boot_match() {
+			define_special (new Sysfun('match.match', _match, 2));
+			define_special (new Sysfun('match.match-define', _match_define, 2,2));
+			_LIB["match.lib"] = true;
+			}
+			
+boot_match();
+	
+ 

@@ -1,0 +1,12 @@
+
+(define (list-push lst item) (append lst (list item)))
+(define starter (map list (list + - / *)))
+
+(define (comb l1 l2) 
+	(cond ((null? l2) null ) 
+	(else (append 
+		(map list-push l1 (circular-list (car l2))) 
+		(comb l1 (cdr l2))))))
+		
+		
+(define (term nums))

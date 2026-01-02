@@ -1,0 +1,119 @@
+;; http://rosettacode.org/wiki/Taxicab_numbers
+
+
+
+#|---------------------
+heap test
+
+(define H (make-heap <))
+(define L (shuffle (iota 100)))
+(for ((n L)) (heap-push H n))
+(for ((n L)) (heap-push H n))
+(for ((n 102)) (write (heap-pop H)))
+-----------------------|#
+
+#|---------------------
+heap variant
+-----------------------|#
+
+(require '(heap compile))
+
+(define (scube a b) (+ (* a a a) (* b b b)))
+(compile 'scube "-f") ; "-f" means : no bigint, no rational used
+
+;; is n - a^3 a cube  b^3?
+;; if yes return b, else #f
+(define (taxi? n a (b 0))
+	(set! b (cbrt (- n (* a a a)))) ;; cbrt is ∛
+	(when (and (< b a) (integer? b)) b))
+(compile 'taxi? "-f")
+
+#|-------------------
+looking for taxis
+--------------------|#
+;; remove from heap until heap-top >= a
+;; when twins are removed, it is a taxicab number : push it
+;; at any time (top stack) = last removed
+
+(define (clean-taxi H limit: a  min-of-heap: htop)
+		(when (and htop (> a htop))
+				(when (!= (stack-top S) htop) (pop S))
+				(push S htop)
+				(heap-pop H)
+				(clean-taxi H  a (heap-top H))))
+(compile 'clean-taxi "-f")
+				
+;; loop on a and b, b <=a , until n taxicabs found
+(define (taxicab (n 2100))
+	(for ((a (in-naturals)))
+		(clean-taxi H (* a a a) (heap-top H))
+		#:break (> (stack-length S) n)
+		(for ((b a))
+			(heap-push H (scube a b)))))
+				
+#|------------------
+printing taxis
+---------------------|#
+;; string of all decompositions
+(define (taxi->string i n)
+	(string-append (format "%d. %d " (1+ i) n)
+	(for/string ((a (cbrt n)))
+		#:when (taxi? n a)
+		(format " = %4d^3 + %4d^3" a (taxi? n a)))))
+		
+(define (taxi-print taxis (nfrom 0) (nto 26))
+		(for ((i (in-naturals nfrom)) (taxi (sublist taxis nfrom nto)))
+		(writeln (taxi->string i (first taxi)))))
+		
+
+		
+;; out
+				
+(define S (stack 'S)) ;; to push taxis
+(define H (make-heap < )) ;; make min heap of all scubes
+
+(taxicab 2100)
+(define taxis (group (stack->list S)))
+(taxi-print taxis )
+(taxi-print taxis 1999 2006)
+
+(define (taxi-triplets taxis (nfrom 0) (nto 2000))
+		(for ((i (in-naturals nfrom)) (taxi (sublist taxis nfrom nto)))
+		#:when (> (length taxi) 1)
+		(writeln (taxi->string i (first taxi)))))
+		
+(taxi-triplets taxis)
+
+		
+	
+#|
+    (taxicab 1200)
+    3443057991
+    (define SOL (stack->list S))
+    SOL
+    (length SOL)
+    2045
+    (take SOL 12)
+    (1729 4104 13832 20683 32832 39312 40033 46683 64232 65728 110656 110808)
+    (define G (group SOL))
+    G
+    (take G 10)
+    ((1729) (4104) (13832) (20683) (32832) (39312) (40033) (46683) (64232) (65728))
+    (for/list ((g G)) #:continue (= (length g) 1) (first g))
+    ((87539319 87539319) (119824488 119824488) (143604279 143604279) (175959000 175959000) (327763000 327763000) (700314552 700314552) (804360375 804360375) (958595904 958595904) (1148834232 1148834232) (1407672000 1407672000))
+    
+
+
+2000:1671816384 = 1168^3 +  428^3 =  944^3 +  940^3
+2001:1672470592 = 1124^3 +  632^3 = 1187^3 +   29^3
+2002:1673170856 = 1034^3 +  828^3 = 1164^3 +  458^3
+2003:1675045225 = 1153^3 +  522^3 = 1081^3 +  744^3
+2004:1675958167 = 1096^3 +  711^3 = 1159^3 +  492^3
+2005:1676926719 = 1188^3 +   63^3 = 1095^3 +  714^3
+2006:1677646971 =  990^3 +  891^3 = 1188^3 +   99^3
+|#
+
+
+
+	
+	

@@ -1,0 +1,153 @@
+;; https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm
+
+(require 'bigint)
+
+;; test equality mod p
+(define-syntax-rule (mod= a b p) 
+	 (zero?  (% (- a b) p)))
+;; assign mod p
+(define-syntax-rule (mod:≡ s v p)
+	(set! s (% v p)))
+
+(define (Legendre a p)  
+	 (powmod a (/ (1- p) 2) p))
+
+
+(define (Tonelli n p)
+(unless (= 1 (Legendre n p)) (error "not a square (mod p)" (list n p)))
+(define q (1- p))
+(define s 0)
+
+	(while (even? q)
+		(/= q 2)
+		(++ s))
+	
+	(if (= s 1) (powmod n (/ (1+ p) 4) p)
+	
+	(begin
+	(define z   
+		(for ((z (in-range 2 p))) ;; 
+		  #:break (= (1- p)  (Legendre z p)) => z ))
+
+	(define c (powmod z q p))
+	(define r (powmod n (/ (1+ q) 2) p))
+	(define t (powmod n q p))
+	(define m s)
+	(define t2 0)
+	
+	(while #t
+		#:break (mod= 1  t p) => r
+		(mod:≡ t2 (* t t) p) 
+		(define i 
+			(for ((i (in-range 1 m)))
+				#:break (mod= t2 1 p) => i
+				(mod:≡ t2 (* t2 t2) p) 
+				))
+		(define b (powmod c (expt 2 (- m i 1)) p))
+		(mod:≡ r (* r b) p) 
+		(mod:≡ c (* b b) p) 
+		(mod:≡ t (* t c) p) 
+		(set! m i)))))
+		
+(define ttest 
+	`((10 13) (56 101) (1030 10009) (44402 100049)  
+	(665820697 1000000009) 
+	(881398088036  1000000000039)
+	(41660815127637347468140745042827704103445750172002  ,(+ 1e50 577))))  
+	     	
+(define (task ttest)
+	(for ((test ttest))
+		(define n (first test))
+		(define p (second test))
+		(define r (Tonelli n p))
+		(assert (mod= (* r r) n p))
+		(printf "n = %d p = %d" n p)
+		(printf "\t  roots : %d %d"  r (- p r))))
+		
+		
+		
+
+	(define (Totest p)
+	(define ct 0)
+	(set! p  (next-prime p))
+	(while (= 3 (% p 4)) (set! p (next-prime p)))
+	
+	(define n
+	(for ((a (in-range (- p (random p )) 2 -1)))
+	#:break (> (++ ct ) 10000) => (error "totest" p)
+			 #:continue (square? a) 
+			 #:break (= 1 (Legendre a p)) => a))
+			 
+	(writeln 'Totest 'n n 'p p)
+	(define r1 (Tonelli n p))
+	(define r2 (- p r1))
+	(writeln 'r1 r1 'r2 r2 'p p)
+	(assert (mod= n (* r1 r1) p)) 
+	(assert (mod= n (* r2 r2) p)) 
+	(list r1 r2))
+	
+
+
+(define n     41660815127637347468140745042827704103445750172002)
+(define p     100000000000000000000000000000000000000000000000577) 
+
+{{draft task}}
+'''Tonelli–Shanks algorithm'''
+ 
+'''Solve x² ≡ n (mod p)'''
+ 
+In computational number theory, the [https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm  Tonelli–Shanks algorithm] is a technique for solving an equation of the form '''x² ≡ n (mod p)''', where p is an odd prime and x ,n Є Fp = {0, 1, ... p-1}. It is used in [https://en.wikipedia.org/wiki/Rabin_cryptosystem cryptography] techniques.
+
+To apply the algorithm we need the Legendre symbol.
+
+Legendre symbol
+
+* The Legendre symbol ( a | p) denotes the value of  a ^ ((p-1)/2) (mod p)
+* (a | p) ≡  1 if a is a square (mod p)
+* (a | p) ≡  -1  if a is not a square (mod p)
+* (a | p) ≡ 0 is a ≡ 0 
+
+
+'''Algorithm pseudo-code''' copied from Wikipedia :
+
+All ≡  are taken to mean (mod p) unless stated otherwise.
+
+* Input : p an odd prime, and an integer n .
+* Step 0. Check that n is indeed a square  : (n | p) must be ≡ 1
+* Step 1. [Factors out powers of 2 from p-1] Define q -odd- and s such as p-1 = q * 2^s
+** if s = 1 , i.e p ≡  3 (mod 4) , output the two solutions r ≡  +/- n^((p+1)/4) .
+* Step 2. Select a non-square z such as (z | p) = -1 , and set c ≡  z^q .
+* Step 3. Set r ≡  n ^((q+1)/2) , t ≡ n^q, m = s .
+* Step 4. Loop.
+** if t ≡  1  output r, p-r .
+** Otherwise find, by repeated squaring, the lowest i , 0 < i< m , such as t^(2^i) ≡ 1
+** Let b ≡  c^(2^(m-i-1)), and set r ≡  r*b, t ≡ t*b^2 , c ≡  b^2 and m = i.
+
+
+'''Numerical Example'''
+* n=10, p= 13.  See [https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm Wikipedia]
+
+'''Task'''
+
+Implement the above. 
+
+Find solutions (if any) for 
+* n = 10 p = 13
+* n = 56 p = 101
+* n = 1030 p = 10009
+* n = 1032 p = 10009
+* n = 44402 p = 100049  
+ 
+'''Extra credit'''
+
+* n  =    665820697     p  =   1000000009      
+* n  =   881398088036     p   =  1000000000039    
+* n  =  41660815127637347468140745042827704103445750172002   p  = 10^50 + 577   	
+
+See also:
+* [[Modular exponentiation]]
+* [[Cipolla's algorithm]]
+			
+			
+		
+	

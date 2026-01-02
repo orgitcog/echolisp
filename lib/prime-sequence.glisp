@@ -1,0 +1,65 @@
+;; sequence sigma a(n) = prime
+
+
+(define (last-u used lastu)
+	(for ((i (in-range lastu (vector-length used) 2)))
+		#:break (not [used i]) => i
+		#f))
+
+(define *count* 0)
+
+(define (pseq  N (an))
+(define used (make-vector(* N 3) #f))
+(define lastu 2)
+	(vector-set! used 2 #t)
+	(vector-set! used 1 #t)
+	(vector-set! a 0 2 )
+	(vector-set! a 1 1 )
+	(define s 3)
+	
+	(for ((n (in-range 2 N)))
+	(set! an
+		(for ((p (in-range lastu 1000000000 2)))
+		#:continue [used p]
+		#:break (prime? (+ p s)) => p
+		))
+	(vector-set! used an #t)
+	(vector-set! a n an)
+	(+= s an)
+	(set! lastu (last-u used lastu))
+	;(when (>= an (* 2 n)) (printf "a(%d) = %d" n an))
+	;(when (>= an (* 2 n)) (writeln 'a  n '= an))
+	(when (>= an (* 2 n)) (++ *count*))
+	)
+	(writeln 'last-u lastu  's s  'count *count*)
+	)
+	
+	
+(define (task (N 40))
+	(define-global 'a (make-vector N))
+	(set! *count* 0)
+	
+	(pseq N)
+	(take a 40))
+	
+	
+		
+task
+(task 1000)
+last-u     1930     s     999221    
+[28]→ #( 2 1 4 6 10 8 12 16 14 24 30 22 18 26 34 36 20 28 38 40 32 42 46 48 44 52 56 60 54 58 66 50 64 62 70 84 90 72 92 76)
+(task 10000)
+last-u     19904     s     99990419    
+[29]→ #( 2 1 4 6 10 8 12 16 14 24 30 22 18 26 34 36 20 28 38 40 32 42 46 48 44 52 56 60 54 58 66 50 64 62 70 84 90 72 92 76)
+(task 100000)
+last-u     199954     s     9999900397    
+[30]→ #( 2 1 4 6 10 8 12 16 14 24 30 22 18 26 34 36 20 28 38 40 32 42 46 48 44 52 56 60 54 58 66 50 64 62 70 84 90 72 92 76)
+
+(task 100000)
+last-u     199954     s     9999900397     count     54379    
+[16]→ #( 2 1 4 6 10 8 12 16 14 24 30 22 18 26 34 36 20 28 38 40 32 42 46 48 44 52 56 60 54 58 66 50 64 62 70 84 90 72 92 76)
+(for/max ((i (in-range 90000 100000))) (// (a i) (* 2 i)))
+[17]→ 1.0015472339136362
+
+n → ∞  :  a(n) < C * 2  * n , C  < 1.1
+

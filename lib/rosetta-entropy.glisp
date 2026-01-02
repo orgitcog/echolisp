@@ -1,0 +1,33 @@
+;; http://rosettacode.org/wiki/Entropy
+
+(lib 'hash)
+;; counter: hash-table[key]++
+(define (count++ ht k )
+(hash-set ht k (1+ (hash-ref! ht k 0))))
+
+(define (hi count n )
+	(define pi (// count n))
+	(- (* pi (log2 pi))))
+	
+;; (H [string|list]) → entropy (bits)
+(define (H info) 
+	(define S (if(string? info) (string->list info) info))
+	(define ht (make-hash))
+	(define n (length S))
+	
+	(for ((s S)) (count++ ht s))
+	(for/sum ((s (make-set S)))  (hi (hash-ref ht s) n)))
+	
+
+;; by increasing entropy
+
+(H "🔴")  → 0
+(H "🔵🔴") → 1
+(H "1223334444") → 1.8464393446710154
+(H "♖♘♗♕♔♗♘♖♙♙♙♙♙♙♙♙♙") → 2.05632607578088
+(H "Longtemps je me suis couché de bonne heure") → 3.860828877124944
+(H "azertyuiopmlkjhgfdsqwxcvbn") → 4.700439718141092
+(H (for/list ((i 1000)) (random 1000)))  → 9.13772704467521
+(H (for/list ((i 10000)) (random 10000))) → 12.45170635692333
+(H (for/list ((i 100_000)) (random 100_000))) → 15.777516877140766
+(H (for/list ((i 1000_000)) (random 1000_000))) → 19.104028424596976

@@ -1,0 +1,32 @@
+;; http://rosettacode.org/wiki/Introspection
+
+(version)
+(when (< (version) 2.6) 
+	(writeln "Please reload EchoLisp : CTRL-F5, CMD-R or other...")
+	(exit))
+
+(bound? 'abs) → #|global|
+
+
+(if (and (bound? 'bloop) (bound? 'abs) (procedure? abs)) (abs bloop) 'NOT-HERE) → NOT-HERE
+(define bloop -777) → bloop
+(if (and (bound? 'bloop) (bound? 'abs) (procedure? abs)) (abs bloop) 'NOT-HERE) → 777
+
+
+(take (environment-bindings system-global-environment ) 13)
+
+(for ((kv (environment-bindings system-global-environment ) ))
+#:when (integer? (second kv))
+(writeln kv))
+
+
+(for/sum ((kv (environment-bindings user-initial-environment )))
+#:when (integer? (second kv))
+(writeln kv)
+(second kv))
+
+
+("bloop" -777)    
+
+("DAY" 216000)    
+("JOUR" 216000)    

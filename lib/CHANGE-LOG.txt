@@ -1,0 +1,349 @@
+;;
+
+2.19 : new : regexp object
+2.20 : fix : lambda[TAG_REMEMBER] for ffuncall
+      : ref : http://rosettacode.org/wiki/Hofstadter_Figure-Figure_sequences
+
+2.21 
+     : out : macro-expand
+
+2.22
+	: new : (define-macro name pat template)
+	: new : (macro? name)
+	: new : (match expr pattern template)
+	
+2.23
+	: fix : (append list atom) is legal 
+	
+2.24
+	: new : match.lib with reader-macros, (match ...)
+	
+2.26
+	: new : (make-in32-vector length) (vector->pixels)
+	
+2.27
+	: fix : (set!-values ..) 
+	: new : array->html
+	: doc : matrix.lib
+	
+2.28	
+	: fix : numequal_ix if bigint
+	: new : (powmod base exp mod)
+	
+2.29
+	: fix : remove "use strict" (Safari)
+	: new : (sql-select struct.name  ... order-by name | struct.name)
+	: new : egcd and crt-solve (math.lib)
+	
+2.30
+	: new : read-list
+	: new : cross-product in math.lib
+	: fix : compose must accept lambda's
+	
+2.31
+	: fix : (append L null)
+	: fix : (group) uses equal?
+	
+2.32
+	: fix : (take (in-primes 55) 10)
+	: new : (in-producer proc [args])
+	: new : (table->html)
+	
+2.33
+	: new : (sum-divisors) (num-divisors) math.lib
+	: fix : refactored _factor
+
+2.34
+	: new : string-trim[-left|right]
+	: new : html-print, string->html
+	
+2.35
+	: new : list-rotate
+2.36
+	: new : json->struct
+	: new : vector-search
+2.37
+	: out : pixels-dim
+	: fixed : (plot-size [width [height]])
+2.38
+	: fix : match.lib , quasiquote
+2.39
+	: fix : or*
+2.40
+    : fix : set-subset?
+    : fix : tail-call with default args
+    : fix : default arg is (name [value])
+2.41
+	: new : pixels->int32 plot.lib
+	: new : for/or
+2.42
+	: fix : logical-and !!
+	: new : bit-count, bit-right
+2.43
+	: fix : for ((r Table)) ..
+	: new : table-xref, table-xset!
+2.44
+	: new : table-sort
+2.45
+	: new : for/max
+	: fix : hash-set -> value
+2.46
+	: new : tasks.lib
+2.48
+	: new : Generators
+2.49
+	: new : (drop anything n)
+2.50
+	: fix : (version) -> number
+	: new : (exit)
+2.51
+	: new : _LIB_MACROS
+2.62
+    : out : _LIB_MACROS
+	: new : setv!
+	: new : match.lib + infix + _READER_INFIX
+	: new : sequences.lib (Procrastinators)
+	: new : (reader-infix symb) + infix.glisp
+	: fix : read-list
+	: new : |  delimiter - replaced by <space>|<space>
+	: fix : (quotient big-int)
+	: new : (divides?  a b) - math.lib
+2.63
+	: fix : hash.lib
+2.70
+	: new : (scanl proc:2:3  init list|proctor [list|proctor]) in sequences.lib
+	: new : dico.fr.no-accent
+2.71
+	: new : unicode->string (implodes)
+2.72
+	: new : ["a" .. "z"] sequences
+	: new : (for-each proctor ...)
+2.73
+ 	: fix : (tail-call )
+ 	: new : (string-alphabetic?)
+2.74
+ 	: new : iterator/n iterator/f
+2.75
+ 	: new : (iterator->list)
+2.76
+	: new : (combinations list k)
+	: new : (combonations/rep list n)
+	: new : (combinator list k)
+	: fix : (for (in-producer ..)) stops when #f
+2.77
+	: new : (list-permute ) extended
+2.78
+	: new : (take ... #:all)
+	: out : (iterator->list)
+2.79
+	: fix : Anp
+2.80
+	: fix : (append proctor proctor)
+2.81
+	: new : bit-vectors
+	: fix : (bit-right)
+2.83
+	: fix : _filter
+2.84
+	: new : define-global
+	: fix : (words-select ...)
+2.85
+	: new : q-push/pop tree.lib
+2.87
+	: new : (hash-get-keyS hash value)
+2.88
+	: new : string-remove
+2.90
+	: new : amb.lib
+2.91
+	: fix : check-arity message
+	: fix : syntax-expand imbricated
+2.94
+	: new : (every ..) (any ...)
+2.95
+	: new : (while ..) tail position
+2.96
+	: new : file->string http: or https:/
+	: dbg : url->string
+2.97
+	: fix  : core/glex_make_closure_1 : bypass quotes ❗️❗️
+	: new : (semaphore-push/pop) tasks.lib
+2.98
+	: new : (bit-vector-count)
+2.99
+	: fix : sem.signal tasks FIFO
+3.01
+	: fix : plot.lib
+	: new : make-region, pixels-map
+3.02
+	: new : array-map
+3.03
+	: new : matrix-solve, matrix-invert
+3.04
+	: fix : cache-max 4000000
+3.05
+	: fix : sequences.lib
+	: new : kons in sequences.lib
+3.06
+	: fix : (take null ..)
+	: new : (bernoulli n)
+3.07
+	: fix : infix.glisp
+	: new : plot-segment
+	: FIX : (expt -27 1/3)
+	: new : define-syntax-id 
+3.08
+	: fix : revisit REP for immediate macros
+3.09
+	: new : vector+=
+	: new : (+= <symb> [n]) ++ --
+	: new : vector-dup
+3.10
+	: new : vector-rotate!
+	: fix : (eqv? vectors)
+3.11
+	: new : (any sequence ..)(every sequence ..)
+3.12
+	: fix : (define (f) (define a ..)(define b ..) ..)
+3.13
+	: new : statically check arity (core.js)
+3.14
+	: new : [V i] or [M i j]
+3.15
+	: new : read-number
+	: fix : string-split/join optional arg
+3.17
+	: new : (indices dims) sequence
+3.18
+	: fix : tree.lib
+3.20
+	: new : pretty-print 
+	: new : *= /= //= , vector*=
+	: fix : (random -1)
+	: fix : _MATH_PRECISION <= 1.e-15
+3.22
+	: fix : (take n obj) or (take obj n)
+	: new : (-> and ->>) operators
+	: new : (string obj)
+3.23
+	: new : % = modulo
+	: new : (blink)
+	: fix : string->json
+	: new : (string-diacritics)
+	
+3.26
+	: new : (input-string|expr)
+	: new : infix->prefix 
+	: doc : infix deprecated
+	: fix : js-eval 
+	: new : (jsonify expr) 
+	: new : (console-dir) 
+	: new : member* 
+	: fix : __equal
+	: fix : (box)
+	
+3.27
+	: fix : str-convert (number)
+3.30
+	: new : matrix-set-row! / col!
+	: fix : best shuffle
+3.31
+	: fix : Plouffle's inverter
+	: new : plot : gradient
+	: new : audio.lib
+	
+3.31
+	: new :  list->vector (procrastinator)
+3.32
+	: new : (for [( (u v ..) ..)]
+	: new : usage
+3.33
+	: new : types.lib
+3.34
+	: new : (check-match expr pat [proc])
+	: new : (type-check expr type [proc])
+3.35
+	: fix : deep bug isAutoRef
+	: new : string-empty?
+3.40
+	: new : define-method
+	: new : dot notation inside methods DOC
+	; new : struct defaults, #:onchange :DOC
+	: new : copy list|vector|struct
+3.42
+	: new : infix.lib
+3.43
+	: fix : down arrow -> next autocomplete
+	: new : (suppr-key [#f|#t])
+3.44
+	: new : #{ a b c ..} syntax for sets, { ..} for lists
+	: new : infix.lib
+3.46
+	: new : (list-partition) list.lib
+	: new : (sublists) list.lib
+	: new : (powerset list) sequences.lib
+	: fix : complex.toString (decimals)
+3.47
+	: new : queue-length
+	: fix : ELAPSE_TIME in (rho n)
+3.48
+	: new : disk-in-disk? (math.lib) 
+	: new : for/min (!!!!)
+	: new : (list-permute list vector|list)
+3.49
+	: fix : (in-primes n) stream
+3.50
+	: new : define inside inside ... define
+	: new : ! for factorial
+3.51
+	: fix : define-method ( f a b . rest)
+	: fix : type-of?
+3.52
+	: fix : awful mod, powMod , random()  bugs bigint.lib
+3.53
+	: new : reader-set-prompt!
+	: new : %= operator
+3.55
+	: fix : for_vars with same name as formals
+3.56
+	: fix :  (f (_n) (⭕️ reverse (take (range 100) _n))) missing env !!
+3.57
+	: new : in-range+
+4.00
+	: new : notebook, worksheets, ..
+4.02
+	: fix : book.js
+4.03
+	: new : Open drop down
+	: new : (roots ..) (croots ..) math.lib
+	: new : poly-div
+4.04
+	: new : click inside stdout
+4.06
+	: new : interface.lib
+	: new : (srange ...)
+4.08
+	: fix : interface.lib
+	: new : (info-text) DOC !!!
+4.10
+	: new : __libload
+	: new : (re)import with new Sysfun(..,..,redef=true)
+	: new : ui-get-element
+	: new : script.id=<name.lib> (DOM)
+	
+4.50
+	: new : THREE.lib
+	: new : sysfun > 4 args
+	: new : inline functions
+4.51
+	: new : wksheet : save status, auto-save
+
+
+
+	
+	
+	
+	
+	
+	
+	

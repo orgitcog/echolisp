@@ -1,0 +1,280 @@
+;; duplo.glisp.
+;; circuit C = vector of 1/-1/0
+
+;; R is turn counter in right direction
+;; The nb of right turns in direction i
+;; must be = to nb of right turns in direction i+6 (opposite)
+(define (legal? R)
+	(for ((i 6))
+		#:break (!= (vector-ref R i) (vector-ref R (+ i 6))) => #f
+		#t))
+		
+
+;; equal circuits by rotation ?
+(define (circuit-eq? Ca Cb)
+	(for [(i (vector-length Cb))]
+		#:break (eqv? Ca (vector-rotate! Cb 1)) => #t
+		#f))
+		
+;; check a result vector RV  of circuits
+;; Remove equivalent circuits
+
+(define (check-circuits RV)
+;;(writeln 'check RV)
+	(define n (vector-length RV))
+	(for ((i (1- n)))
+		#:continue (null? (vector-ref RV i))
+	(for ((j (in-range (1+ i) n )))
+		#:continue (null? (vector-ref RV j))
+		(when (circuit-eq? (vector-ref RV i) (vector-ref RV j))
+			  (vector-set! RV j null)))))
+		
+	
+;; global
+;; *circuits* = result set = a vector
+(define-values (*count* *calls*  *circuits*) (values 0 0 null))
+
+;; generation circuit C[i] i = 0 .... maxn 
+(define (circuits C Rct R D n maxn  straight )
+
+(define _Rct Rct) ;; save value
+(define _Rn (vector-ref R Rct))
+;;(writeln 'calls *calls* C Rct R D n maxn straight)
+(++ *calls* )
+
+	(cond
+    [(> *calls* 4_000_000) #f] ;; enough for maxn=24
+    
+    ;; hit !! legal solution
+    [(and (= n maxn) ( zero? Rct ) (legal? R) (legal? D))
+		(++ *count*)
+;;(writeln 'hit  *count* *circuits* C)
+		(vector-push *circuits* (vector-dup C))];; save solution
+		
+	;; stop
+	[( = n maxn) #f]
+	
+	;; cutter - not enough right turns
+	[(and (!zero? Rct) (< (+ Rct maxn ) (+ n straight 11))) #f] 
+	
+	[else
+		;; play right
+			(vector+= R Rct 1) ; R[Rct] += 1
+			(set! Rct (modulo (1+ Rct) 12))
+			(vector-set! C n 1)
+			(circuits C Rct R  D (1+ n) maxn straight)
+			
+		;;	unplay it - restore values
+			(set! Rct _Rct)
+			(vector-set! R Rct _Rn) 
+			(vector-set! C n '-)
+			
+		;; play left
+			(set! Rct (modulo (1- Rct) 12))
+			(vector-set! C n -1)
+			(circuits C Rct R D (1+ n) maxn straight)
+			
+		;;	unplay
+			(set! Rct _Rct)
+			(vector-set! R Rct _Rn) 
+			(vector-set! C n '-)
+			
+		;; play straight line 
+			(when (!zero? straight)
+			(vector-set! C n 0)
+			(vector+= D Rct 1)
+			(circuits C Rct R D (1+ n) maxn (1- straight))
+			
+		;;	unplay
+			(vector+= D Rct -1)
+			(vector-set! C n '-)) ]))
+		
+;; (generate max-tracks  [ + max-straight])
+(define (gen (maxn 20) (straight 0))
+	(define R (make-vector 12))
+	(define D (make-vector 12))
+	(define C (make-vector maxn '-))
+	(set!-values (*count* *calls*  *circuits*) (values 0  0 (make-vector 0)))
+	(vector-set! R 0 1) ;; play starter (always right)
+	(vector-set! C 0 1)
+	(circuits C 1 R D 1 (+ maxn straight) straight)
+	(writeln 'gen-counters (cons *calls* *count*))
+	
+	(check-circuits *circuits*)
+	(set! *circuits* (for/vector ((c *circuits*)) #:continue (null? c) c))
+	(if (zero? straight)
+		(printf "Number of circuits C%d : %d" maxn (vector-length *circuits*))
+		(printf "Number of circuits C%d,%d : %d" maxn  straight (vector-length *circuits*)))
+	(when (< (vector-length *circuits*) 40) 
+		(for ((c *circuits*) (i 40)) (writeln i c))))
+	
+	
+;; utilitaire
+;; verification un circuit
+(define (check C)
+	(define Rct 0)
+	(define R (make-vector 12))
+	(define D (make-vector 12))
+	(for ((c C))
+	(when (= c 1)
+		(vector+= R Rct 1)
+		(set! Rct (modulo (1+ Rct) 12)))
+	(when (= c -1)
+		(set! Rct (modulo (1- Rct) 12)))
+	(when (= c 0)
+		(vector+= D Rct 1)))
+	(writeln 'Rct Rct R  D (legal? R) (legal? D)))
+	
+
+;; circuits tests
+(define C1 #(1 1 1 1 1 1 1 1 1 1 1 1))
+(define C10 #(1 0 0 1 1 1 1 1 1 0 0  1 1 1 1 1))
+(define Cx #(1 -1 1 1 1 1 1 1 1 -1 1  1 1 1 1 1 ))
+(define Cy #(1 1 1 -1  1 1 1 1 1 1 1 -1 1 1 1 1  ))
+(define Cz #(1 -1  1 1 1 0  0 0 1 1 1 1 -1  1 1 1 0 0 0 1 1 1 ))
+(define Cbig #(1 1 1 -1  0 0 1 1 1 1 1 1 1 -1 0 0 1 1 1 1  ))
+(define Cloop0 #(1 1 1 -1  0 0 1 1 1 1 1 1 1 -1 0 0 1 1 1 1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1  ))
+(define Cloop #(1 1 1 -1  1 1 1 1 1 1 1 -1  1 1 1 1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1  ))
+(define Cbad #(1 1 1 1 1 1 1 1 1 1 1 1 -1 1))
+(define Cbad2 #( -1 1 1 1 1 1 1 1 -1 -1 -1 1 1 1 1 1 1 1 1 -1 -1 -1 1 1 1 1 1 1 1 -1 -1))
+
+
+
+;; DESSINS
+(define-constant TURN (// PI 6)) ;; 30°
+(define-constant R 80)
+(define-constant L 40)
+
+(define-syntax-rule (new-p) 
+	(begin 
+		(set! px (+ x (* R (cos a)))) 
+		(set! py (- y (* R (sin a))))))
+(define-syntax-rule (new-center)
+	(begin
+		(set! x (- (* 2 px) x))
+		(set! y (- (* 2 py) y))))
+	
+(define-syntax-rule (turn-right) 
+	(begin
+		(plot-arc x y R a (+ a TURN)  #f)
+		(+= a TURN)))
+		
+(define-syntax-rule (turn-left) 
+	(begin
+		(plot-arc x y R a (- a TURN)  #t)
+		(-= a TURN)))
+
+
+;; plotting
+;; (duplot circuit) ou (duplot n° solution)
+(define (duplot C (x 0) (y 0))
+(define a 0) ;; angle
+(define b 0)
+(define px 0)
+(define py 0)
+(define qx 0)
+(define qy 0)
+
+(when (number? C) (set! C (vector-ref *circuits* C)))
+
+(define rot #t)
+	(plot-size 500 500)
+	(plot-x-minmax -250)
+	(plot-y-minmax -250)
+	(plot-clear)
+	(plot-line-width 2)
+	(plot-axis 0 0 "lightgray")
+	(plot-line-width 10)
+	(plot-color "yellow")
+	
+	(for [(c C)]
+		(cond
+		[(= c 0) 
+		(new-p)
+		(set! b (-  0 a PI/2))
+		(unless rot (set! b (+ PI b)))
+		
+		(set! qx (+ px (* L (cos b))))
+		(set! qy (+ py (* L (sin b))))
+		(plot-color "orange")
+		(plot-segment px py qx qy)
+		(plot-color "yellow")
+		(set! x (+ x (- qx px)))
+		(set! y (+ y (- qy py)))]
+		
+		[(and (= c 1) rot) (turn-right)]
+		[(= c 1)
+			(set! rot #t)
+			(new-p)
+			(new-center)
+			(+= a PI)
+			;(set! a (+ a PI))
+			(turn-right)]
+			
+		[(and (= c -1) (not rot)) (turn-left)]
+			
+		[(= c -1)
+			(set! rot #f)
+			(new-p)
+			(new-center)
+			(+= a PI)
+			;(set! a (+ a PI))
+			(turn-left)] ))
+			
+		(new-p)
+		(writeln 'FINAL px py))
+		
+		
+(gen 24)
+gen-counters     (2574175 . 286)    
+Number of circuits C24 : 35
+0     #( 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1)    
+1     #( 1 1 1 1 1 1 1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 1 1 1 1 1)    
+2     #( 1 1 1 1 1 1 -1 1 -1 1 -1 1 1 1 1 1 1 1 -1 1 -1 1 -1 1)    
+3     #( 1 1 1 1 1 1 -1 1 -1 -1 1 1 1 1 1 1 1 1 -1 1 -1 -1 1 1)    
+4     #( 1 1 1 1 1 1 -1 1 -1 -1 1 1 1 1 1 1 1 1 -1 -1 1 1 -1 1)    
+5     #( 1 1 1 1 1 1 -1 1 -1 -1 1 1 1 1 1 1 1 -1 1 1 -1 1 -1 1)    
+6     #( 1 1 1 1 1 1 -1 -1 1 1 -1 1 1 1 1 1 1 1 -1 -1 1 1 -1 1)    
+7     #( 1 1 1 1 1 1 -1 -1 1 1 -1 1 1 1 1 1 1 -1 1 1 -1 1 -1 1)    
+8     #( 1 1 1 1 1 1 -1 -1 1 -1 1 1 1 1 1 1 1 1 -1 -1 1 -1 1 1)    
+9     #( 1 1 1 1 1 1 -1 -1 1 -1 1 1 1 1 1 1 1 -1 1 1 -1 -1 1 1)    
+10     #( 1 1 1 1 1 1 -1 -1 1 -1 1 1 1 1 1 1 1 -1 1 -1 1 1 -1 1)    
+11     #( 1 1 1 1 1 1 -1 -1 -1 1 1 1 1 1 1 1 1 1 -1 -1 -1 1 1 1)    
+12     #( 1 1 1 1 1 1 -1 -1 -1 1 1 1 1 1 1 1 1 -1 -1 1 1 1 -1 1)    
+13     #( 1 1 1 1 1 1 -1 -1 -1 1 1 1 1 1 1 1 -1 1 1 1 -1 -1 1 1)    
+14     #( 1 1 1 1 1 1 -1 -1 -1 1 1 1 1 1 1 1 -1 1 1 -1 1 1 -1 1)    
+15     #( 1 1 1 1 1 -1 1 1 -1 1 -1 1 1 1 1 1 1 -1 1 1 -1 1 -1 1)    
+16     #( 1 1 1 1 1 -1 1 1 -1 -1 1 1 1 1 1 1 1 -1 1 1 -1 -1 1 1)    
+17     #( 1 1 1 1 1 -1 1 1 -1 -1 1 1 1 1 1 1 1 -1 1 -1 1 1 -1 1)    
+18     #( 1 1 1 1 1 -1 1 -1 1 1 -1 1 1 1 1 1 1 -1 1 -1 1 1 -1 1)    
+19     #( 1 1 1 1 1 -1 -1 1 1 1 -1 1 1 1 1 1 1 -1 -1 1 1 1 -1 1)    
+20     #( 1 1 1 1 1 -1 -1 1 1 1 -1 1 1 1 1 1 -1 1 1 1 -1 -1 1 1)    
+21     #( 1 1 1 1 1 -1 -1 1 1 1 -1 1 1 1 1 1 -1 1 1 -1 1 1 -1 1)    
+22     #( 1 1 1 1 -1 1 1 1 -1 1 -1 1 1 1 1 1 -1 1 1 1 -1 1 -1 1)    
+23     #( 1 1 1 1 -1 1 1 1 -1 -1 1 1 1 1 1 1 -1 1 1 1 -1 -1 1 1)    
+24     #( 1 1 1 1 -1 1 1 1 -1 -1 1 1 1 1 1 1 -1 1 1 -1 1 1 -1 1)    
+25     #( 1 1 1 1 -1 1 1 -1 1 1 -1 1 1 1 1 1 -1 1 1 -1 1 1 -1 1)    
+26     #( 1 1 1 1 -1 1 -1 1 1 1 -1 1 1 1 1 1 -1 1 -1 1 1 1 -1 1)    
+27     #( 1 1 1 1 -1 -1 1 1 1 1 -1 1 1 1 1 1 -1 -1 1 1 1 1 -1 1)    
+28     #( 1 1 1 1 -1 -1 1 1 1 1 -1 1 1 1 1 -1 1 1 -1 1 1 1 -1 1)    
+29     #( 1 1 1 -1 1 1 1 1 -1 1 -1 1 1 1 1 -1 1 1 1 1 -1 1 -1 1)    
+30     #( 1 1 1 -1 1 1 1 1 -1 -1 1 1 1 1 1 -1 1 1 1 1 -1 -1 1 1)    
+31     #( 1 1 1 -1 1 1 1 1 -1 -1 1 1 1 1 1 -1 1 1 1 -1 1 1 -1 1)    
+32     #( 1 1 1 -1 1 1 1 -1 1 1 -1 1 1 1 1 -1 1 1 1 -1 1 1 -1 1)    
+33     #( 1 1 1 -1 1 1 -1 1 1 1 -1 1 1 1 1 -1 1 1 -1 1 1 1 -1 1)    
+34     #( 1 1 -1 1 1 1 -1 1 1 1 -1 1 1 1 -1 1 1 1 -1 1 1 1 -1 1) 
+			
+			
+		
+
+
+
+
+
+		
+		
+		
+		
+		
+		
+		

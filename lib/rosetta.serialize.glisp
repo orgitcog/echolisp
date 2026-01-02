@@ -1,0 +1,37 @@
+#|
+http://rosettacode.org/wiki/Object_serialization
+|#
+
+(require 'struct)
+
+(define (person->string self) (format "%a : person." (person-name self)))
+(define (writer->string self) (format "%a:  writer of %a." 
+			(person-name self)
+			(writer-books self)))
+(define  (father->string self) (format "%a: father of %a." 
+						(person-name self)
+						(map person-name (father-children self))))
+			
+
+			
+(struct person (name)  #:tostring person->string)
+(struct writer person (books) #:tostring writer->string)
+(struct father person (children)  #:tostring father->string)
+
+
+
+(define simon (writer "Simon" '(my-life my-wife my-bike)))
+(define elvis (person "Elvis"))
+(define papa (father "papa" (list simon elvis)))
+
+(set-father-children! papa (list simon elvis papa))
+
+(local-put-value 'simon simon "objects.dat")
+(local-put-value 'elvis elvis "objects.dat")
+(local-put-value 'papa papa   "objects.dat")
+
+;; reboot
+
+(define simon (local-get-value 'simon "objects.dat"))
+(define elvis (local-get-value 'elvis "objects.dat"))
+(define papa (local-get-value 'papa "objects.dat"))

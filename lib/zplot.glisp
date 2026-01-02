@@ -1,0 +1,41 @@
+#| 
+g-functions 
+drawing random f(z) = P(z)/Q(z) and g(z) = f iterated n times
+http://w.american.edu/cas/mathstat/lcrone/GFunBase.html
+|#
+
+(require 'math.lib)
+(require 'plot.lib)
+
+;; random poly degree n coeff in [-cmax .. cmax]
+(define a (complex (1+ (random)) (1+ (random))))
+(define-values (P Q) (values 0 0))
+(define (rpoly n cmax)
+	(set! cmax (- (abs cmax)))
+	(map (lambda(n) (random cmax)) (iota n)))
+(define (g-init n m cmax) 
+			(set! m (max 1 m))
+			(set! n (max 1 n))
+			(set! P (append (list 0 a) (rpoly (1- n) cmax)))
+			(set! Q (cons 1 (rpoly (1- m) cmax)))
+			(writeln 'P: (poly->string 'z P))
+			(writeln 'Q: (poly->string 'z Q)))
+			
+(define (f z) (cpoly z P Q))
+(define (g z) (g-iterate f z a 10))
+(display "f(z) = P(z)/Q(z)")
+(display "g(z) =  iterate f°f°f°f°..  = f^n  (z / a^n)")
+(writeln)
+(display "usage: (g-init d°P d°Q coeff-max)")
+(display "usage: (plot-z-mod f xrange yrange)")
+(display "usage: (plot-z-mod g xrange yrange)")
+
+
+
+
+
+
+
+	
+	
+

@@ -1,0 +1,65 @@
+// shaders
+
+
+
+// SHADERS USE
+// sample in js/controls/sample/html : good intro
+newMaterial = new THREE.ShaderMaterial({
+					uniforms: {
+						color: { type: 'c', value: new THREE.Color(0.45 * 0xffffff) }
+					},
+					vertexShader: document.getElementById( 'vs' ).textContent,
+					fragmentShader: document.getElementById( 'fs' ).textContent,
+					side: THREE.DoubleSide
+				});
+				
+				
+// CASTING SHADOWS
+http://learningthreejs.com/data/casting-shadows/
+				
+				
+// TIPS  ::: UPDATE GEOMETRY
+/ set the geometry to dynamic
+// so that it allow updates
+sphere.geometry.dynamic = true;
+// changes to the vertices
+sphere.geometry.verticesNeedUpdate = true;
+// changes to the normals
+sphere.geometry.normalsNeedUpdate = true;
+
+// MATERIAL COLOR
+material.vertexColors = THREE.VertexColors;
+Also make sure that vertexColors are defined for each face of your geometry.
+geometry.faces[ faceIndex ].vertexColors[ vertexIndex ] = new THREE.Color( 0xff0000 );
+Then in your render loop, to change a vertex color, do this:
+geometry.faces[ faceIndex ].vertexColors[ vertexIndex ].setHSL( Math.random(), 0.5, 0.5 );
+mesh.geometry.colorsNeedUpdate = true;
+
+
+
+// TEXTURE MAPPING
+http://solutiondesign.com/blog/-/blogs/webgl-and-three-js-texture-mappi-1/
+
+
+
+
+// PARAMETRIC SURFACE/ CURVE GRAPHER
+https://stemkoski.github.io/Three.js/Graphulus-Surface.html
+https://stemkoski.github.io/Three.js/Graphulus-Curve.html
+
+view-source:https://stemkoski.github.io/Three.js/Metabubbles.html   (metaballs)
+http://www.ro.me/tech/metaball-playground
+view-source:https://www.clicktorelease.com/code/bumpy-metaballs/
+
+// look for three.js marching cubes
+view-source:http://threejs.org/examples/js/MarchingCubes.js
+
+http://paulbourke.net/geometry/polygonise/ ****
+view-source:http://stemkoski.github.io/Three.js/Marching-Cubes.html   *****
+
+
+// ROTATE CAMERA
+https://github.com/josdirksen/threejs-cookbook/blob/master/03-camera/03.08-rotate-camera-around-scene-y-axis.html
+
+// UPDATING things
+https://github.com/mrdoob/three.js/wiki/Updates

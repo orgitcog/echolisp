@@ -1,0 +1,30 @@
+#|
+IndexedDB
+
+(lib 'words)
+and
+(lib 'dico.fr) or (lib 'dico.en) needed
+|#
+
+(require 'idb)
+
+
+(define (onsuccess hit) (writeln '🎺-success!! hit))
+(define (onerror err) (writeln '🚑-error err))
+(define (oncompletion what) (writeln 'DB-COMPLETE what))
+(define (klist klist) (writeln 'KEYS klist))
+
+(db-delete-store! 'test)
+(db-make-store 'test)
+(db-keys 'test klist)
+
+#|
+(define train (unicode->string 0x1F682))
+(define wagon (unicode->string 0x1F683))
+(define tram (unicode->string 0x1F68B))
+(define pinpon (unicode->string 0x1F692))
+|#
+
+
+
+

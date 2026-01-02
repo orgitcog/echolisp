@@ -1,0 +1,248 @@
+;; rosettacode.org/wiki/Universal_Turing_machine
+;; https://en.wikipedia.org/wiki/Busy_beaver
+
+We define a Turing machine as an instance of TM struct, which stores the definition values (states,symbols,rules) and the current state values (state, tape, position). It can be stopped, restarted, called as a sub-program, or transformed into a sequence or stream.'Huge' TM are run in the background. Rules are compiled into a vector indexed by state * symbol.
+<lang scheme>
+(require 'struct)
+
+(struct TM (read-only: name states symbs final rules mem  state-values: tape pos state))
+
+(define-syntax-rule (rule-idx state symb numstates)
+    (+ state (* symb numstates)))
+    
+(define-syntax-rule (make-TM name states symbs rules) 
+    (_make-TM  name 'states 'symbs 'rules))
+    
+;; a rule is (state symbol --> write move new-state)
+;; index for rule = state-num + (number of states)  * symbol-num
+;; convert states/symbol into vector indices
+(define (compile-rule T rule  into: rules)
+    (define numstates (vector-length (TM-states T)))
+    (define state (vector-index [rule 0](TM-states T) )) ; index 
+    (define symb (vector-index [rule 1](TM-symbs T) ))
+    (define write-symb (vector-index [rule 2] (TM-symbs T)  ))
+    (define move (1- (vector-index  [rule 3] #(left stay right) )))
+    (define new-state (vector-index  [rule 4](TM-states T)))
+    (define rulenum (rule-idx state symb numstates))
+    (vector-set! rules rulenum (vector write-symb move new-state))
+    ; (writeln 'rule  rulenum [rules rulenum])
+    )
+    
+(define (_make-TM name states symbs rules)
+    (define T (TM  name (list->vector states) (list->vector symbs) null null))
+    (set-TM-final! T (1-  (length states))) ;; assume one final state
+    (set-TM-rules! T (make-vector (* (length states) (length symbs))))
+    (for ((rule rules)) (compile-rule T (list->vector rule) into: (TM-rules T)))
+    T ) ; returns a TM
+    
+;;------------------
+;; TM-trace 
+;;-------------------
+(string-delimiter "")
+
+(define (TM-print T symb-index: symb (hilite #f))
+	(cond 
+	((= 0 symb) (if hilite "🔲"  "◽️" ))
+	((= 1 symb) (if hilite  "🔳 " "◾️" ))
+	(else "X")))
+		
+(define (TM-trace T tape pos state step)
+	(if (= (TM-final T) state)
+		(write "🔴")
+		(write "🔵"))
+		
+    (for [(p (in-range  (- (TM-mem T) 7) (+ (TM-mem T) 8)))]
+        (write (TM-print T [tape p] (= p pos))))
+    (write step)
+    (writeln))
+    
+;;---------------
+;; TM-init : alloc and init tape
+;;---------------
+(define (TM-init T input-symbs (mem 20))
+    ;; init state variables
+    (set-TM-tape! T (make-vector (* 2 mem)))
+    (set-TM-pos!  T  mem)
+    (set-TM-state! T 0)
+    (set-TM-mem! T mem)
+
+    (for [(symb input-symbs) (i (in-naturals))]
+        (vector-set! (TM-tape T) [+ i (TM-pos T)] (vector-index symb (TM-symbs T))))
+    (TM-trace T  (TM-tape T) mem 0 0)
+    mem )
+
+;;---------------
+;; TM-run : run at most maxsteps
+;;---------------
+(define (TM-run T  (verbose #f)  (maxsteps 1_000_000))
+(define count 0)
+    (define final (TM-final T))
+    (define rules (TM-rules T))
+    (define rule 0)
+    (define numstates (vector-length (TM-states T)))
+    ;; set current state vars
+    (define pos (TM-pos T))
+    (define state (TM-state T))
+    (define tape (TM-tape T))
+    
+    (when (and (zero? state) (= pos (TM-mem T)))
+    	 (writeln 'Starting (TM-name T))
+    	 (TM-trace T tape pos 0 count))
+
+    (while (and (!= state final) (< count maxsteps))
+    (++ count)
+;; The machine
+        (set! rule [rules (rule-idx state [tape pos] numstates)])
+        (when (= rule 0) (error "missing rule" (list state [tape pos])))
+        (vector-set! tape pos [rule 0])
+        (set! state [rule 2])
+        (+= pos [rule 1])
+;; end machine
+        (when verbose (TM-trace  T tape pos state count )))
+;; save TM state
+    (set-TM-pos! T pos)
+    (set-TM-state! T state)
+    (when (= final state)  (writeln 'Stopping (TM-name T) 'at-pos (- pos (TM-mem T))))
+    count) 
+    
+</lang>
+    
+{{out}}
+<pre>
+;; incrementer
+(define T (make-TM "TM: incrementer"
+    (q0 qf)
+    (B 1)
+    ((q0  1 1 right q0)
+       (q0 B 1 stay qf))))
+    
+(TM-init T '(1 1 1) 20)
+(TM-run T #t)
+
+;; three-states busy beaver
+(define T (make-TM "TM: three-states busy beaver"
+    (a b c halt)
+    (0 1)
+     ((a 0 1 right b)
+        (a 1 1 left c)
+        (b 0 1 left a)
+        (b 1 1 right b)
+        (c 0 1 left b)
+        (c 1 1 stay halt))))
+    
+(TM-init T null 100)
+(TM-run T #t)
+</pre>
+
+;; 5-states 2-symbols busy beaver
+;; Result: 4098 "1"s with 8191 "0"s interspersed in 47,176,870 steps.
+(lib 'tasks)
+
+(define T (make-TM "TM: 5-states 2-symbols busy beaver"
+    (A B C D E H)
+    (0 1)
+    ((A 0 1 right B)
+        (A 1 1 left C)
+        (B 0 1 right C)
+        (B 1 1 right B)
+        (C 0 1 right D)
+        (C 1 0 left E)
+        (D 0 1 left A)
+        (D 1 1 left D)
+        (E 0 1 stay H)
+        (E 1 0 left A))))
+        
+(TM-init T null 20000)
+
+(define steps 0)
+(define (TM-task T)
+    (define count (TM-run T #f 1000000)) 
+    (when (zero? steps) (writeln 'START (date)))
+    (+= steps count)
+    (writeln 'TM-steps steps (date))
+    (when (zero? count) (writeln 'END steps (date)))
+    (if (zero? count) #f T))
+        
+(task-run (make-task TM-task T) 1000)
+
+Firefox :
+START     Mon Feb 08 2016 18:34:15 GMT+0100 (CET)    
+TM-steps     47176870     Mon Feb 08 2016 18:38:23 GMT+0100 (CET)    
+END     47176870     Mon Feb 08 2016 18:38:23 GMT+0100 (CET)   
+
+240 - 48 = 192 sec
+ 
+(for/sum ((s (TM-tape T))) s)
+[33]→ 4098
+
+Chrome :
+TM-state     1     pos     -1444     tape     (-20000 . 20000)    
+START     Mon Feb 08 2016 18:41:28 GMT+0100 (CET)    
+TM-steps     47176870     Mon Feb 08 2016 18:47:51 GMT+0100 (CET)    
+END     47176870     Mon Feb 08 2016 18:47:51 GMT+0100 (CET)   
+
+390 - 48 =  342
+
+Safari:
+START     Mon Feb 08 2016 18:59:29 GMT+0100 (CET)    
+TM-steps     47176870     Mon Feb 08 2016 19:04:10 GMT+0100 (CET)    
+END     47176870     Mon Feb 08 2016 19:04:10 GMT+0100 (CET)    
+
+280 - 48 = 232
+
+4 micro-sec / step or 250000 steps/sec
+        
+
+TM: 5-states 2-symbols busy beaver
+
+    (TM-init T null 20000)
+    🔵 ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ 🔲 ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ 0
+    20000
+    (TM-run T #t 32)
+    Starting     TM: 5-states 2-symbols busy beaver    
+    🔵 ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ 🔲 ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ 0
+    🔵 ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ ◾️ 🔲 ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ 1
+    🔵 ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ ◾️ ◾️ 🔲 ◽️ ◽️ ◽️ ◽️ ◽️ 2
+    🔵 ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ ◾️ ◾️ ◾️ 🔲 ◽️ ◽️ ◽️ ◽️ 3
+    🔵 ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ ◾️ ◾️ 🔳 ◾️ ◽️ ◽️ ◽️ ◽️ 4
+    🔵 ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ ◾️ 🔳 ◾️ ◾️ ◽️ ◽️ ◽️ ◽️ 5
+    🔵 ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ 🔳 ◽️ ◾️ ◾️ ◽️ ◽️ ◽️ ◽️ 6
+    🔵 ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ 🔲 ◽️ ◽️ ◾️ ◾️ ◽️ ◽️ ◽️ ◽️ 7
+    🔵 ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ ◾️ 🔲 ◽️ ◾️ ◾️ ◽️ ◽️ ◽️ ◽️ 8
+    🔵 ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ ◾️ ◾️ 🔲 ◾️ ◾️ ◽️ ◽️ ◽️ ◽️ 9
+    🔵 ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ ◾️ ◾️ ◾️ 🔳 ◾️ ◽️ ◽️ ◽️ ◽️ 10
+    🔵 ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ ◾️ ◾️ 🔳 ◾️ ◾️ ◽️ ◽️ ◽️ ◽️ 11
+    🔵 ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ ◾️ 🔳 ◾️ ◾️ ◾️ ◽️ ◽️ ◽️ ◽️ 12
+    🔵 ◽️ ◽️ ◽️ ◽️ ◽️ ◽️ 🔳 ◾️ ◾️ ◾️ ◾️ ◽️ ◽️ ◽️ ◽️ 13
+    🔵 ◽️ ◽️ ◽️ ◽️ ◽️ 🔲 ◾️ ◾️ ◾️ ◾️ ◾️ ◽️ ◽️ ◽️ ◽️ 14
+    🔵 ◽️ ◽️ ◽️ ◽️ 🔲 ◾️ ◾️ ◾️ ◾️ ◾️ ◾️ ◽️ ◽️ ◽️ ◽️ 15
+    🔵 ◽️ ◽️ ◽️ ◽️ ◾️ 🔳 ◾️ ◾️ ◾️ ◾️ ◾️ ◽️ ◽️ ◽️ ◽️ 16
+    🔵 ◽️ ◽️ ◽️ ◽️ ◾️ ◾️ 🔳 ◾️ ◾️ ◾️ ◾️ ◽️ ◽️ ◽️ ◽️ 17
+    🔵 ◽️ ◽️ ◽️ ◽️ ◾️ ◾️ ◾️ 🔳 ◾️ ◾️ ◾️ ◽️ ◽️ ◽️ ◽️ 18
+    🔵 ◽️ ◽️ ◽️ ◽️ ◾️ ◾️ ◾️ ◾️ 🔳 ◾️ ◾️ ◽️ ◽️ ◽️ ◽️ 19
+    🔵 ◽️ ◽️ ◽️ ◽️ ◾️ ◾️ ◾️ ◾️ ◾️ 🔳 ◾️ ◽️ ◽️ ◽️ ◽️ 20
+    🔵 ◽️ ◽️ ◽️ ◽️ ◾️ ◾️ ◾️ ◾️ ◾️ ◾️ 🔳 ◽️ ◽️ ◽️ ◽️ 21
+    🔵 ◽️ ◽️ ◽️ ◽️ ◾️ ◾️ ◾️ ◾️ ◾️ ◾️ ◾️ 🔲 ◽️ ◽️ ◽️ 22
+    🔵 ◽️ ◽️ ◽️ ◽️ ◾️ ◾️ ◾️ ◾️ ◾️ ◾️ ◾️ ◾️ 🔲 ◽️ ◽️ 23
+    🔵 ◽️ ◽️ ◽️ ◽️ ◾️ ◾️ ◾️ ◾️ ◾️ ◾️ ◾️ ◾️ ◾️ 🔲 ◽️ 24
+    🔵 ◽️ ◽️ ◽️ ◽️ ◾️ ◾️ ◾️ ◾️ ◾️ ◾️ ◾️ ◾️ 🔳 ◾️ ◽️ 25
+    🔵 ◽️ ◽️ ◽️ ◽️ ◾️ ◾️ ◾️ ◾️ ◾️ ◾️ ◾️ 🔳 ◾️ ◾️ ◽️ 26
+    🔵 ◽️ ◽️ ◽️ ◽️ ◾️ ◾️ ◾️ ◾️ ◾️ ◾️ 🔳 ◽️ ◾️ ◾️ ◽️ 27
+    🔵 ◽️ ◽️ ◽️ ◽️ ◾️ ◾️ ◾️ ◾️ ◾️ 🔳 ◽️ ◽️ ◾️ ◾️ ◽️ 28
+    🔵 ◽️ ◽️ ◽️ ◽️ ◾️ ◾️ ◾️ ◾️ 🔳 ◾️ ◽️ ◽️ ◾️ ◾️ ◽️ 29
+    🔵 ◽️ ◽️ ◽️ ◽️ ◾️ ◾️ ◾️ 🔳 ◽️ ◾️ ◽️ ◽️ ◾️ ◾️ ◽️ 30
+    🔵 ◽️ ◽️ ◽️ ◽️ ◾️ ◾️ 🔳 ◽️ ◽️ ◾️ ◽️ ◽️ ◾️ ◾️ ◽️ 31
+    🔵 ◽️ ◽️ ◽️ ◽️ ◾️ 🔳 ◾️ ◽️ ◽️ ◾️ ◽️ ◽️ ◾️ ◾️ ◽️ 32 
+
+/*
+(define (qrun state tape pos numstates rule final)
+(while (!= state final)
+        (set! rule [vector-ref rules (rule-idx state [vector-ref tape pos] numstates)])
+        (vector-set! tape pos [vector-ref rule 0])
+        (set! state [vector-ref rule 2])
+        (set! pos (+ pos [vector-ref rule 1]))
+        ))
+*/
+        
+    
+    

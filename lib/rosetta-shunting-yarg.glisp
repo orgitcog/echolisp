@@ -1,0 +1,92 @@
+;; http://rosettacode.org/wiki/Parsing/Shunting-yard_algorithm
+
+(require 'hash)
+(require 'tree)
+
+(define OPS (make-hash))
+(hash-set OPS "^" '(  4 #f)) ;; right assoc
+(hash-set OPS "*" '(  3 #t)) ;; left assoc
+(hash-set OPS "/" '(  3 #t))
+(hash-set OPS "+" '(  2 #t))
+(hash-set OPS "-" '(  2 #t))
+
+;; helpers
+(define (is-right-par? token) (string=? token ")"))
+(define (is-left-par? token)  (string=? token "("))
+(define (is-num? op)   (not (hash-ref OPS op))) ;; crude
+(define (is-op? op)    (hash-ref OPS op))
+(define (is-left? op)  (second (hash-ref OPS op)))
+(define (is-right? op) (not (is-left? op)))
+(define (op-prec op)   (first (hash-ref OPS op)))
+    
+(define (shunt tokens S Q)
+    (for ((token tokens))
+     (writeln "S: " (stack->list S) "Q: " (queue->list Q) "token: "token)
+    (cond
+    [(is-left-par? token) (push S token) ] 
+    [(is-right-par? token)
+        (while (and (stack-top S) (not (is-left-par? (stack-top S)))) 
+               (q-push Q ( pop S)))
+        (when (stack-empty? S) (error 'misplaced-parenthesis "()" ))
+        (pop S)] ; // left par
+    
+    [(is-op? token)
+            (while (and 
+                (is-op? (stack-top S))
+                (or
+                  (and (is-left? token) (<= (op-prec token) (op-prec (stack-top S))))
+                  (and (is-right? token) (< (op-prec token) (op-prec (stack-top S))))))
+                (q-push Q (pop S)))
+        (push S token)] 
+        
+    [(is-num? token) (q-push Q token)]
+    [else (error 'bad-token token)])) ; for
+    (while (stack-top S) (q-push Q (pop S))))
+    
+(string-delimiter "")
+(define (task infix)
+    (define S (stack 'S))
+    (define Q (queue 'Q))
+        (shunt (text-parse infix) S Q)
+        (writeln 'infix infix)
+        (writeln 'RPN (queue->list Q)))
+        
+(task  "3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3")
+
+;; RPN (postfix) evaluator
+
+(require 'hash)
+
+(define OPS (make-hash))
+(hash-set OPS "^" expt) 
+(hash-set OPS "*" *)
+(hash-set OPS "/" //) ;; float divide
+(hash-set OPS "+" +)
+(hash-set OPS "-" -)
+
+(define (op? op) (hash-ref OPS op))
+
+;; algorithm : https://en.wikipedia.org/wiki/Reverse_Polish_notation#Postfix_algorithm
+
+(define (calculator rpn S)
+	(for ((token rpn))
+	(if (op? token)
+		(let [(op2 (pop S)) (op1 (pop S))]
+			(unless (and op1 op2) (error "cannot calculate expression at:" token))
+	    	(push S ((op? token) op1 op2))
+	    	(writeln op1 token op2 "->" (stack-top S)))
+	    (push S (string->number token))))
+	(pop S))
+	
+(define (task rpn)
+ (define S (stack 'S))
+ (calculator (text-parse rpn) S ))
+		
+(task  "3 4 2 * 1 5 - 2 3 ^ ^ / +")
+
+		 
+		
+
+
+
+

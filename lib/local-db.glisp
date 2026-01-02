@@ -1,0 +1,28 @@
+#|
+IDB utilities
+Add a "desc" store to store other stores description
+|#
+
+;; store predicate
+(define (store? store)
+	(member (symbol->string store) (db-stores)))
+	
+;; get/set descriptions
+(define (store-desc store (desc null))
+	
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+;; create "desc" store if needed
+(unless (store? "desc") (db-make-store "desc"))

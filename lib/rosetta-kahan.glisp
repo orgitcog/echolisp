@@ -1,0 +1,35 @@
+;; http://rosettacode.org/wiki/Kahan_summation
+
+
+    
+(define  ( K+ nums ( sum 0.0) (c 0.0) (y) (t))
+	(while (!null? nums)
+		(set! y (- (first nums) c))
+		(set! t (+ sum y))
+		(set! c (- (- t sum) y))
+		(set! sum t)
+		(set! nums (rest nums)))
+		sum)
+		
+
+(define (Ktest )
+	(for ((i 60))
+	(set! a  1.0 )
+	(set! b eps)
+	(set! c (- b))
+	
+	(writeln (+ a b c) (K+ (list a b c)) eps)
+	(set! eps (// eps 2.0))))
+	
+(define eps 1.0)
+(while (!= (+ 1.0 eps) 1.0) (set! eps (// eps 2.0)))
+
+;; 0.9999999999999999     1     1.1102230246251565e-16   
+
+	(define a  1.0 )
+	(define b eps)
+	(define c (- b))
+	
+
+
+(writeln 'standard-add= (+ a b c) 'Kahan-add= (K+ (list a b c)))

@@ -1,0 +1,109 @@
+#| todo database |#
+(require 'struct.lib)
+
+(struct todo (task days status date) #:onchange task-change ) ;; todo record = instance of 'todo' struct
+
+;;
+;; utilities
+;;
+
+(define-constant DAY-SECONDS (* 3600 24))
+
+(define (elapse-days date) ;; date-)diff in days unit
+	(floor (/ (date-diff (current-date) date) DAY-SECONDS )))
+	
+(define (left-pad-0 num length) ; 14 -> 0014
+	(substring (string-append "0000000000" (number->string num)) (- length)))
+	
+(define (task-icon status days) ;; icon = f(status, days-left)
+		(unicode->string
+		(cond
+			((eq? status "done") 0x2705) ; // check mark 
+			((eq? status "cancel") 0x274C) ; // X
+			((eq? status "pending")
+				(cond
+				((<= days 0) 0x2757) ; // ! = late 
+				((= days 1) 0x1F3C3) ; // runner - warning 1-day left
+				(else 0x23F3))) ; // hourglass - waiting to be done
+			(else 0x26D4)))) ; // unknown status
+			
+
+	
+(define  (task-new) ;; creates 'todo' record for task
+	(let* [(task (read-string "name" "task"))
+		   (days (read "# of days left" task))]
+		(todo task days "pending" (current-date))))
+		
+(define (task-print task id)
+	(let [(days-left (-  (todo-days task) (elapse-days (todo-date task ))))
+	(status (todo-status task))]
+	(writeln (left-pad-0 id 3)  (task-icon status days-left)  days-left (todo-task task) )))
+	
+(define (task-days task)
+	(let [(days-left (-  (todo-days task) (elapse-days (todo-date task ))))
+		  (name (todo-task task))]
+		(set-todo-days! task (read days-left (string-append "Days left for: " name )))
+		(set-todo-date! task (current-date))))
+
+(define (task-change task field oldvalue newvalue)
+		(writeln "changing" field oldvalue "->" newvalue)
+		newvalue)
+			
+;;
+;; user interface
+;;
+		
+(define (todo-print)
+		(printer-page "toDo List")
+		(push 'somewhere (string-delimiter))
+		(string-delimiter "")
+		(for-each task-print *todo* (iota 100))
+		(string-delimiter(pop 'somewhere))
+		(printer-page)
+		(void))
+		
+(define (todo-new) ;; insert new record
+		(set! *todo* (cons (task-new) *todo*))
+		(local-put '*todo*))
+		
+(define (todo-time id) ;; update days left
+	(let ((task  (list-ref *todo* id)))
+		(task-days task)
+		(local-put '*todo*)
+		(task-print task id)))
+		
+(define (todo-close id)
+		(let ((task  (list-ref *todo* id)))
+			(set-todo-status! task "done")
+			(local-put '*todo*)
+			(task-print task id)))
+		
+(define (todo-delete id)
+		(let ((task  (list-ref *todo* id)))
+			(set-todo-status! task "deleted")
+			(local-put '*todo*)))
+			
+(define (todo-help)
+	(for-each display '( 
+	"(todo-help) -> this text"
+	"(todo-new) -> create task"
+	"(todo-print) -> print all tasks with status"
+	"(todo-time task-number) -> change days left"
+	"(todo-close task-number) -> task is done"
+	"(todo-delete task-number) -> remove from list")))
+	
+
+(define *todo* null) ;;  init data base to empty list
+(if (local-symbol? '*todo*) (local-get '*todo*)) ;; load existing data base if any
+
+(todo-help)
+(todo-print)
+
+
+			
+		
+
+
+		   
+
+

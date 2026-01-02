@@ -1,0 +1,54 @@
+;; https://fr.wikipedia.org/wiki/Probl%C3%A8me_du_sac_%C3%A0_dos
+;; http://rosettacode.org/wiki/Knapsack_problem/0-1
+(require 'struct)
+(require 'hash)
+(require 'sql)
+
+(define H (make-hash))
+(define T (make-table (struct goodies (name poids valeur ))))
+(define-syntax-rule (name i) (table-xref T i 0))
+(define-syntax-rule (poids i) (table-xref T i 1))
+(define-syntax-rule (valeur i) (table-xref T i 2))
+
+
+(define goodies
+          '((map 9 150) ; 9 is weight, 150 is value
+            (compass 13 35) (water 153 200) (sandwich 50 160)
+            (glucose 15 60) (tin 68 45)(banana 27 60) (apple 39 40)
+            (fromage 23 30) (beer 52 10) (🌞-suntan-cream 11 70) (camera 32 30)
+            (T-shirt 24 15) (pantalons 48 10) (umbrella 73 40)
+            (☔️-trousers 42 70) (☔️-overclothes 43 75) (note-case 22 80)
+            (🌞-sun-glasses 7 20) (towel 18 12) (socks 4 50) (book 30 10)))
+(list->table goodies T)
+
+
+
+;;  make an unique hash-key from (i rest)
+(define (t-idx i r)  (string-append i "|" r))
+;; retrieve best core for item i, remaining r availbble weight
+(define (t-get i r)  (or (hash-ref H (t-idx i r)) 0))
+
+;; compute best scrore (i), assuming best (i-1 rest) is known
+(define (score i restant)
+	(if (< i 0) 0
+	(hash-ref! H (t-idx i restant)
+		(if ( >= restant (poids i)) 
+			(max 
+				(score (1- i) restant) 
+			    (+ (score (1- i) (- restant (poids i))) (valeur i)))
+		    (score (1- i) restant)))))
+	
+;; compute best scores, starting from last item
+(define (task W)
+        (define restant W)
+        (define N (1- (table-count T)))
+		(writeln 'total-value (score N W))
+		(for/list  ((i (in-range N -1 -1)))
+			#:continue (= (t-get i restant) (t-get (1- i) restant))
+			(set! restant (- restant (poids i)))
+			(name i)))
+	
+	
+		
+
+	

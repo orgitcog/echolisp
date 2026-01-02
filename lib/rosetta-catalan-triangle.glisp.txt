@@ -1,0 +1,20 @@
+;; http://mathworld.wolfram.com/CatalansTriangle.html
+
+(define dim 100)
+(define-syntax-rule  (idx i j)  (+ i (* dim j)))
+
+
+(define loops 0)
+
+(define (T n)
+	(define i (modulo n dim))
+	(define j (quotient n dim))
+
+	(cond 
+		((zero? i) 1)
+		((= i j) (T (idx (1- i) j)))
+		(else (+ (T (idx (1- i) j)) (T (idx i (1- j)))))))
+	
+(remember 'T #(0))
+
+(for ((i 15)) (write (T (idx i i))))

@@ -1,0 +1,7 @@
+ {
+  "name": "sandbox",
+  "cells": [
+    "(worksheet-export)",
+    "(define (f x)\n    (+ x x)\n    (* x x)\n    (writeln \"fini\" x))"
+  ]
+}

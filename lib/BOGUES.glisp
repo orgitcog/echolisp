@@ -1,0 +1,39 @@
+(define L '(-1 -2 3 5 6 -2 -1 4 -4 2 -1))
+
+(define (max-seq L)
+	(define max-value -Infinity)
+	(max-max L)
+	max-value)
+	
+(define (max-max L)
+(define value 
+	(if
+	(empty? L) -Infinity
+	;; <== HERE (because recursive call of _max-max FORMAL
+	(max (first L)  (+ (first L) (max-max  (cdr L)  )))))
+	(when (> value max-value)
+		(set! max-value value))
+	value)
+
+    (max-max L)
+    max-value
+   )
+   
+;;
+
+(match '( 23 45 78 99) (a ... b) (b ... a))
+[3]→ (📝 undefined (23 45 78))
+
+;; break does not compile
+
+;;
+
+;;inner define
+;;(define u) !!!!
+;;(define-values ...) binds at top level !!!
+;;(define-values (lambda ...)
+
+(define (f) (define a 9) (define b 8) (+ a b))
+[19]→ f
+
+(define foo) !!!!! awful

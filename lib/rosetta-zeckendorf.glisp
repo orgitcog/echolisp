@@ -1,0 +1,65 @@
+;; 
+
+We analytically find the first fibonacci(i) >= n, using the formula i = log((n* Φ) + 0.5) / log(Φ) .
+<lang>
+;; special fib's starting with 1 2 3 5 ...
+(define (fibonacci n)
+    (+ (fibonacci (1- n)) (fibonacci (- n 2))))
+(remember 'fibonacci #(1 2))
+
+(define-constant Φ (// (1+ (sqrt 5)) 2))
+(define-constant logΦ (log Φ))
+;; find i : fib(i) >= n
+(define (iFib n)
+   (floor (// (log (+ (* n Φ) 0.5)) logΦ)))
+    
+;; left trim zeroes
+(string-delimiter "")
+(define (zeck->string digits)
+        (if (!= 0 (first digits)) 
+            (string-join digits "") 
+            (zeck->string (rest digits))))
+    
+(define (Zeck n)
+        (cond
+        (( < n 0) "no negative zeck")
+        ((inexact? n) "no floating zeck")
+        ((zero? n) "0")
+        (else (zeck->string
+                (for/list ((s (reverse (take fibonacci (iFib n)))))
+                (if ( > s n) 0 
+                    (begin (-= n s) 1 )))))))
+
+</lang>
+{{out}}
+<pre>
+(take Zeck 21)
+    → (0 1 10 100 101 1000 1001 1010 10000 10001 
+     10010 10100 10101 100000 100001 100010 100100 100101 101000 101001 101010)
+
+(Zeck 1000000000)
+    → 1010000100100001010101000001000101000101001
+</pre>
+    
+    
+0: 0
+1: 1
+2: 10
+3: 100
+4: 101
+5: 1000
+6: 1001
+7: 1010
+8: 10000
+9: 10001
+10: 10010
+11: 10100
+12: 10101
+13: 100000
+14: 100001
+15: 100010
+16: 100100
+17: 100101
+18: 101000
+19: 101001
+20: 101010

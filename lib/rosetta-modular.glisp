@@ -1,0 +1,97 @@
+;; http://rosettacode.org/wiki/Modular_arithmetic
+
+(require 'types)
+(require 'struct)
+(require 'math)
+
+;; Type  (structure) Zp
+(struct Zp (m p) #:initialize Zp-init  #:tostring Zp->string)
+(define (Zp-init Zp:zp) (set-Zp-m! zp (% (+ (floor zp.m) zp.p) zp.p)))
+(define (Zp->string Zp:zp) (string-append zp.m "⨸" zp.p))
+
+;; Methods selectors : integers or mix Z/p & integers
+(make-type NumList (Number ...))
+(make-type MixZpInteger [ Zp | Integer])
+(make-type ZpList (MixZpInteger ...))
+
+;;------------------
+;; Zp internals
+;;------------------
+
+(define (num->Zp num p) ;; conversion
+	(cond 
+	((type-of? num Zp) num)
+	((integer? num) (Zp num p))
+	(else (error "Z/p: cannot convert: " num))))
+	
+; should check a,b have the same p : not implemented
+(define (_zp_add a b modulo: p)
+	(Zp (+ (Zp-m (num->Zp a p)) (Zp-m (num->Zp b p))) p))
+(define (_zp_mul a b modulo: p)
+	(Zp (* (Zp-m (num->Zp a p)) (Zp-m (num->Zp b p))) p))
+(define (_zp_sub a b modulo: p)
+	(Zp (- (Zp-m (num->Zp a p)) (Zp-m (num->Zp b p))) p))
+	
+;; p is prime, a in Fp = {0 1 ... p-1}
+;; inverse always exists
+(define (_zp_inv a modulo: p)
+	(set! a (num->Zp a p))
+    (define-values (g inv q) (egcd (Zp-m a) p))
+    (Zp inv  p))
+    
+(define (_zp_div a b modulo: p)
+	(_zp_mul a (_zp_inv b p) p))
+	
+;;-----------------
+;; Zp API
+;;-----------------
+		
+;; n-operands  integer ops . Eg (+ a b c d ..)
+(define-method (Zp-add Number:a . NumList:rest) 
+		(apply + (cons a rest)))
+;; n-operands  mixed ops . Eg (+ Zp:a b c d ..)
+(define-method (Zp-add Zp:a . ZpList:rest) 
+		(for/fold (acc a) ((zp rest)) (_zp_add acc zp a.p)))
+(define-method (Zp-sub Number:a . NumList:rest) 
+		(apply - (cons a rest)))
+(define-method (Zp-sub Zp:a . ZpList:rest) 
+		(for/fold (acc a) ((zp rest)) (_zp_sub acc zp a.p)))
+(define-method (Zp-mul Number:a . NumList:rest) 
+		(apply * (cons a rest)))
+(define-method (Zp-mul Zp:a . ZpList:rest) 
+		(for/fold (acc a) ((zp rest)) (_zp_mul acc zp a.p)))
+(define-method (Zp-div Number:a . NumList:rest) 
+		(apply / (cons a rest)))
+(define-method (Zp-div Zp:a . ZpList:rest) 
+		(for/fold (acc a) ((zp rest)) (_zp_div acc zp a.p)))
+
+;; Zp:a^n
+(define-method (Zp-expt Number:a Integer:n) (expt a n))
+(define-method (Zp-expt Zp:a Integer:b) (Zp (powmod a.m b a.p) a.p))
+
+(define x (Zp 10 13))
+(define y (Zp 8 13))
+
+;; Operator overloading is a rather crude macro
+;; replace "+" symbol by Zp-add symbol
+;; replace "^" symbol by Zp-expt symbol
+
+(define (with-Zp p)
+	(reader-dict-set! "+" "Zp-add")
+	(reader-dict-set! "^" "Zp-expt")
+	(reader-dict-set! "*" "Zp-mul")
+	(reader-dict-set! "/" "Zp-div")
+	(reader-dict-set! "-" "Zp-sub"))
+	(reader-set-prompt (string-append "Z/" p)))
+	
+(define (without-Zp-ops)
+	(reader-dict-set! "+" #f)
+	(reader-dict-set! "^" #f))
+	
+	
+(define (f x) (+ (^ x 100) x 1))
+
+
+
+
+

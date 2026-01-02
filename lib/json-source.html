@@ -1,0 +1,334 @@
+<html>
+<body>
+
+<div id="divMain"></div>
+
+<script type='text/javascript'>
+
+// main
+
+function main()
+{
+	new StockTracker
+	(
+		[
+			new Stock("NASDAQ", "GOOG"),
+		]
+	).initialize();
+}
+
+// class
+
+function Stock(exchange, symbol, priceLast)
+{
+	this.exchange = exchange;
+	this.symbol = symbol;
+	this.priceLast = priceLast;
+}
+{
+	Stock.prototype.domElementUpdate = function(parentDomElement)
+	{
+		if (this.domElement == null)
+		{
+			var tr = document.createElement("tr");
+
+			var td = document.createElement("td");
+			tr.appendChild(td);
+
+			var td = document.createElement("td");			
+			tr.appendChild(td);
+
+			this.domElement = tr;
+
+			parentDomElement.appendChild(this.domElement);
+		}
+
+		var tdsAll = this.domElement.getElementsByTagName("td");
+
+		var priceAsString;
+
+		if (this.priceLast == null)
+		{
+			priceAsString = "?";
+		}
+		else
+		{
+			var centsPerDollar = 100;
+			var cents = Math.floor(this.priceLast * centsPerDollar) % centsPerDollar;
+			var dollarsAsString = "" + Math.floor(this.priceLast);
+			var centsAsString = (cents < 10 ? "0" : "") + cents;
+			priceAsString = dollarsAsString + "." + centsAsString;
+		}
+
+		tdsAll[0].innerHTML = this.symbol;
+		tdsAll[1].innerHTML = priceAsString;
+	}
+
+	Stock.prototype.update = function()
+	{
+		this.updateUsingWebServiceYahoo();
+	}
+
+	/*
+	Stock.prototype.updateUsingWebServiceGoogle = function()
+	{
+		// API deprecated in 2011, but still works as of 2014.
+	
+		var requestURL = 
+			"https://www.google.com/finance/info?q="
+			+ this.exchange + ":" + this.symbol;
+
+		var request = new XMLHttpRequest();
+		request.open("GET", requestURL, false);
+		try
+		{
+			request.send(null);
+			var responseAsString = request.responseText;
+			responseAsString = responseAsString.substr("////".length);
+
+			var responseAsArray = JSON.parse(responseAsString);
+			var responseAsObject = responseAsArray[0];
+	
+			this.priceLast = responseAsObject["l"]; // "latest"
+		}
+		catch(e)
+		{
+			this.priceLast = "?";
+		}
+	}
+	*/
+/*
+
+pwd : chinchard666
+
+	 http://api.previmeteo.com/YOUR_API_KEY/ig/api?weather=marmande,FR&hl=fr // XML
+	 http://api.previmeteo.com/868c359f9b0bc59b402322d9efe41f06/ig/api?weather=marmande,FR&hl=fr
+	
+	// 
+	
+	(file->string "https://finance.yahoo.com/webservice/v1/symbols/GOOG/quote?format=json")
+	
+	e3898fc6d8ec4cb7a99033c4beb18de5
+	http://openexchangerates.org/api/latest.json?app_id=e3898fc6d8ec4cb7a99033c4beb18de5
+	/api/latest.json?app_id=e3898fc6d8ec4cb7a99033c4beb18de5
+	
+	E4zPsRkzYX4qYazLutpV  QunadL
+	https://www.quandl.com/api/v1/datasets/EOD/AAPL.csv?auth_token=E4zPsRkzYX4qYazLutpV
+	https://www.quandl.com/api/v1/datasets/WIKI/AAPL.json?auth_token=E4zPsRkzYX4qYazLutpV   <=====
+	
+;  will work with Safari LOCAL ...
+(define (success file-name text) (writeln 'OK file-name text ))
+(file->string success	"http://www.quandl.com/api/v1/datasets/ODA/FRA_LUR.json?column=1")
+	
+ #((347068800 . 6.349) (378604800 . 7.438) (410140800 . 8.069) (441676800 . 8.758) (473299200 . 10.067) (504835200 . 10.417) (536371200 . 10.575) (567907200 . 10.633) (599529600 . 10.075) (631065600 . 9.65) (662601600 . 9.375) (694137600 . 9.6) (725760000 . 10.642) (757296000 . 11.85) (788832000 . 12.275) (820368000 . 11.958) (851990400 . 12.4) (883526400 . 12.35) (915062400 . 12.05) (946598400 . 11.317) (978220800 . 9.525) (1009756800 . 8.758) (1041292800 . 8.642) (1072828800 . 8.558) (1104451200 . 8.9) (1135987200 . 8.9) (1167523200 . 8.858) (1199059200 . 8.008) (1230681600 . 7.483) (1262217600 . 9.092) (1293753600 . 9.275) (1325289600 . 9.2) (1356912000 . 9.792) (1388448000 . 10.258) (1419984000 . 9.972) (1451520000 . 10.038) (1483142400 . 9.859) (1514678400 . 9.597) (1546214400 . 9.342) (1577750400 . 9.257))
+	
+http://www.quandl.com/api/v1/datasets/WHO/203_FRA.json?column=1
+(file->string success "http://www.quandl.com/api/v1/datasets/WHO/203_FRA.json?column=1")
+(json-import populo)
+[3]→ #[jsObject]
+(get &3 "data")
+
+ #( #( "2012-12-31" 63937) #( "2011-12-31" 63582) #( "2010-12-31" 63231) #( "2009-12-31" 62888) #( "2008-12-31" 62553) #( "2007-12-31" 62211) #( "2006-12-31" 61845) #( "2005-12-31" 61445) #( "2004-12-31" 61003) #( "2003-12-31" 60528) #( "2002-12-31" 60048) #( "2001-12-31" 59601) #( "2000-12-31" 59213) #( "1999-12-31" 58895) #( "1998-12-31" 58636) #( "1997-12-31" 58418) #( "1996-12-31" 58216) #( "1995-12-31" 58009) #( "1994-12-31" 57792) #( "1993-12-31" 57570) #( "1992-12-31" 57339) #( "1991-12-31" 57098) #( "1990-12-31" 56846))
+ 
+ 
+*/
+	
+	/*
+	{
+"list" : { 
+"meta" : { 
+"type" : "resource-list",
+"start" : 0,
+"count" : 1
+},
+"resources" : [ 
+{
+"resource" : { 
+"classname" : "Quote",
+"fields" : { 
+"name" : "Google Inc.",
+"price" : "530.799988",
+"symbol" : "GOOG",
+"ts" : "1430856000",
+"type" : "equity",
+"utctime" : "2015-05-05T20:00:00+0000",
+"volume" : "1374145"
+		}
+		}
+	}
+
+]
+}
+}
+*/
+
+	Stock.prototype.updateUsingWebServiceYahoo = function()
+	{
+		var requestURL = 
+			"https://finance.yahoo.com/webservice/v1/symbols/"
+			+ this.symbol
+			+ "/quote?format=json";
+
+		var request = new XMLHttpRequest();
+		request.open("GET", requestURL, false);
+		try
+		{
+			request.send(null);
+			var responseAsString = request.responseText;
+
+			var responseAsArray = JSON.parse(responseAsString);
+			var responseAsObject = responseAsArray.list.resources[0].resource;
+	
+			this.priceLast = parseFloat(responseAsObject.fields.price);
+
+		}
+		catch(e)
+		{
+			this.priceLast = "?";
+		}
+	}
+
+}
+
+function StockTracker(stocksToTrack)
+{
+	this.stocksToTrack = stocksToTrack;
+}
+{
+	// constants
+	StockTracker.Newline = "<br />";
+
+	// instance methods
+
+	StockTracker.prototype.initialize = function()
+	{
+		var millisecondsPerTimerTick = 2000;
+
+		setInterval
+		(
+			this.handleEventTimerTick.bind(this),
+			millisecondsPerTimerTick
+		);
+
+		this.handleEventTimerTick();
+	}
+
+	StockTracker.prototype.update = function()
+	{
+		for (var i = 0; i < this.stocksToTrack.length; i++)
+		{
+			var stock = this.stocksToTrack[i];
+			stock.update();
+		}
+
+		this.domElementUpdate();
+	}
+
+	// dom
+
+	StockTracker.prototype.domElementUpdate = function()
+	{
+		var divTracker = document.createElement("div");
+
+		if (this.domElement == null)
+		{
+			var labelSymbolToAdd = document.createElement("label");
+			labelSymbolToAdd.for = "inputSymbolToAdd";
+			labelSymbolToAdd.innerHTML = "Add Stock by Symbol:";
+			divTracker.appendChild(labelSymbolToAdd);
+
+			var inputSymbolToAdd = document.createElement("input");
+			inputSymbolToAdd.id = "inputSymbolToAdd";
+			divTracker.appendChild(inputSymbolToAdd);
+
+			var buttonSymbolAdd = document.createElement("button");
+			buttonSymbolAdd.innerHTML = "Add";
+			buttonSymbolAdd.onclick = this.buttonSymbolAdd_Click.bind(this);
+			divTracker.appendChild(buttonSymbolAdd);
+
+			var tableQuotes = document.createElement("table");
+			tableQuotes.id = "tableQuotes";
+			tableQuotes.border = "1px solid";
+
+			var tr = document.createElement("tr");
+
+			//var td = document.createElement("td");
+			//td.innerHTML = "Exchange";
+			//tr.appendChild(td);
+
+			var td = document.createElement("td");
+			td.innerHTML = "Symbol";
+			tr.appendChild(td);
+
+			var td = document.createElement("td");
+			td.innerHTML = "Price";
+			tr.appendChild(td);
+
+			tableQuotes.appendChild(tr);
+
+			for (var i = 0; i < this.stocksToTrack.length; i++)
+			{
+				var stock = this.stocksToTrack[i];
+				stock.domElementUpdate(tableQuotes);
+			}		
+
+			divTracker.appendChild(tableQuotes);
+
+			this.domElement = divTracker;
+			var divMain = document.getElementById("divMain");
+			divMain.appendChild(this.domElement);
+		}
+
+		var tableQuotes = document.getElementById("tableQuotes");
+
+		for (var i = 0; i < this.stocksToTrack.length; i++)
+		{
+			var stock = this.stocksToTrack[i];
+			stock.domElementUpdate(tableQuotes);
+		}
+	}
+
+	// events
+
+	StockTracker.prototype.buttonSymbolAdd_Click = function(e)
+	{
+		var inputSymbolToAdd = document.getElementById("inputSymbolToAdd");
+		var stockToAddAsString = inputSymbolToAdd.value;
+
+		var exchange;
+		var symbol;
+
+		if (stockToAddAsString.indexOf(":") == -1)
+		{
+			exchange = null;
+			symbol = stockToAddAsString;
+		}
+		else
+		{
+			var stockToAddAsStrings = stockToAddAsString.split(":");
+			exchange = stockToAddAsStrings[0] 
+			symbol = stockToAddAsStrings[1];
+		}
+		
+		var stock = new Stock
+		(
+			exchange, symbol
+		);
+		this.stocksToTrack.push(stock);
+
+		this.update();
+	}
+
+	StockTracker.prototype.handleEventTimerTick = function()
+	{
+		this.update();	
+	}
+}
+
+// run
+
+main();
+
+</script>
+</body>
+</html>

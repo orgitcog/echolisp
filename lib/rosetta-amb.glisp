@@ -1,0 +1,124 @@
+;; http://wiki.pageforest.com/#js-patterns/amb
+;; http://rosettacode.org/wiki/Twelve_statements#Racket
+;;http://rosettacode.org/wiki/Dinesman's_multiple-dwelling_problem
+
+(require 'amb)
+
+(define (ftest context)
+	(define a (amb  context '( 3 2 1)))
+	;;(when (>= a 3) (amb-fail))
+	(define b (amb context '(6 5 4)))
+	(define c (amb context '( 8 7)))
+	(writeln 'a a 'b b 'c c 'choices (amb-vector context) context ) ;; 'context (context->list context))
+	(when (!= (+ a b c ) 15) (amb-fail))
+	(writeln 'hit  a b c)
+	(amb-fail)
+	)
+	
+(amb-run  ftest (amb-make-context))
+
+;; 
+	
+(define (amb-fail)
+	(throw 'amb-fail #f))
+	
+;; context := amb index + vector of choices[index]
+;; choice[index] is a list of remaining choices
+(define (amb-make-context)
+	(cons 0 (make-vector 10 null)))
+	
+;; returns list of current choices
+(define (amb-choices context)
+	(for/list ((choice (cdr context)))
+			#:break (null? choice)
+			(first choice)))
+	
+;; select and returns  a choice among list of values
+(define (amb context values)
+	(define index (first context)) 
+	(define choices (cdr context))
+	;; initialize
+	(when (null? (vector-ref choices index))
+		(vector-set! choices index values)
+		(vector-set! choices (1+ index) null))
+	;; bumps index and return first choice
+	(set-car! context (1+ index))
+	(first (vector-ref choices index)))
+	
+;; loops and calls proc until no failure
+(define (amb-run proc  context )
+	(define choices (cdr context))
+	(define more #t)
+	(vector-set! choices 0 null)
+	
+	(while more
+		(try
+		(set-car! context 0)
+		(proc context)
+		(set! more #f) ;; success - stop looping
+		
+		(catch (e m) ;; backtrack
+		(for ((last-index (in-range (1- (first context)) -1 -1)))
+		      (vector-set! choices last-index (rest (vector-ref choices last-index)))
+		      #:break (!null? (vector-ref choices last-index))
+		      )
+		))
+		;; no more choices; stop looping
+		#:break (null? (vector-ref choices 0)) => #f
+	))
+	
+;; general purpose amb-select
+;; (amb-select predicate ((values_1)(values_2) ...)
+;; values := list of values
+;; (predicate (choice_1 choice_2 ...)) -> #t ot #f
+;; choice_i is one of values_i
+;; returns  null or list-of-choices among values
+
+(define (amb-select pred values)
+	(define context (amb-make-context))
+	
+	(define (amb-proc context)
+		(for-each (curry amb context) values)
+		(unless (pred (amb-choices context)) (amb-fail)))
+		
+	(amb-run  amb-proc context)
+	(amb-choices context))
+	
+;; task
+	
+(define words '(("the" "that" "a") ("frog" "elephant" "thing")
+    ("walked" "treaded" "grows")
+    ("slowly" "quickly" )))
+    
+(define (words-fit? words)
+		(for ((w1 words) (w2 (rest words)))
+		#:break (not (string=? (string-last w1) (string-first w2)))  => #f
+		))
+
+
+
+;;
+
+	
+	
+(define (task  context)
+	(for-each (curry amb context) words)
+	(words-fit? (amb-choices context))
+	(writeln (amb-choices context)))
+	
+(amb-run  task (amb-make-context))
+("that" "thing" "grows" "slowly")    
+
+;; OR
+
+
+
+	
+(define (task words)
+	(amb-select words-fit? words))
+	
+
+	
+	
+	
+	

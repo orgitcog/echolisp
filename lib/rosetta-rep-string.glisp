@@ -1,0 +1,26 @@
+http://rosettacode.org/wiki/Rep-string
+
+
+(require 'list)
+
+(define (cyclic? cyclic)
+(define len (length cyclic))
+(define trunc null)
+
+(if (> len 1)
+(for ((lam (in-range (quotient len 2) 0 -1)))
+   (set! trunc (take cyclic (- len (modulo len lam))))
+   #:break (equal? trunc  (list-rotate trunc lam)) => (list->string (take cyclic lam))
+  
+   'no-rep )
+   'too-short-no-rep))
+   
+   
+(define strings '["1001110011" "1110111011" "0010010010" "1010101010"
+      "1111111111" "0100101101" "0100100" "101" "11" "00" "1"])
+      
+(define (task strings)
+	(for-each (lambda (s) 
+	(writeln s (cyclic? (string->list s)))) strings))
+	
+	

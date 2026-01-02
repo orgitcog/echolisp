@@ -1,0 +1,40 @@
+#|
+rosetta
+|#
+(require 'bigint)
+
+;; bogue (define-syntax-rule (digits-10 n) (string-length (number->string n)))
+;; bogue (/ big big)
+;; to doc : number-length !!!!!!!!!!!
+
+;; dom.max_script_run_time;20
+;; FF 16 to 20sec
+#|
+(define (!n n) 
+	(if (zero? n)  0
+	(+ (!n (1- n)) (factorial (1- n)))))
+
+(remember '!n)
+|#
+
+;; FF 12 to 24 sec
+#|
+(define (!n n) ;; Chrome
+	(if(zero? n) 0
+	(for/sum ((i n)) (factorial i))))
+
+|#
+
+
+;; FF 62 secs
+(define (!n n (acc 0))
+	(if (zero? n) acc 
+	(!n (1- n) (+ acc (factorial (1- n))))))
+
+	
+(for ((n 11)) (writeln (!n n)))
+(for ((n (in-range 20 120 10))) (writeln (!n n)))
+;;(for ((n (in-range 1000 11000 1000)))  (writeln (number-length(!n n))))
+;;(for ((n (in-range 1000 11000 1000)))  (!n n) (writeln n))
+
+

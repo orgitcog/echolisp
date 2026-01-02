@@ -1,0 +1,31 @@
+#|
+graph utilities
+graph.glisp
+|#
+(require 'graph)
+
+;; input : list of edges (( a . b) ( a . c) ....)
+(define (alist->graph alist g) 
+	(for (( edge alist)) 
+		(graph-make-edge g 
+			(graph-make-vertex g (first edge))
+			(graph-make-vertex g (rest edge)))))
+		
+;; input : list of arcs (( a . b) ( a . c) ....)
+(define (alist->digraphalist g)
+	(for (( arc alist)) 
+		(graph-make-arc g 
+			(graph-make-vertex g (first arc))
+			(graph-make-vertex g (rest arc)))))
+
+;; exemples
+;; example graph
+(define tgv '((a . b) (b . c) (b . d) (d . f) 
+	(f . e) (e . a) (f . g) (g . i)  (i . h) (h . f)))
+(define g (make-graph "G"))
+(alist->graph tgv g)
+
+(define a (graph-vertex-ref g 'a))
+(define b (graph-vertex-ref g 'b))
+(define i (graph-vertex-ref g 'i))
+

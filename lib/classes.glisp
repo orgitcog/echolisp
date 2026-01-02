@@ -1,0 +1,43 @@
+
+
+;;;;;;;;;
+(define-class Person null (name (age :initform 66)))
+(define-method tostring (Person) (lambda (p)  ( format "🚶 %a " p.name)))
+(define-method mailto (Person Person) (lambda( p o) (printf "From %a to️  %a : ..." p o)))
+
+
+(define-class Writer (Person)  (books))
+(define-method tostring (Writer) (lambda (w)( format "🎩 %a" w.name)))
+
+(define-method mailto (Person Writer) 
+	(lambda (p w) (printf " From %a (age %d). Dear writer of %a ..." p p.age  w.books )))
+
+
+(define simone     (make-instance Person  :name  'simone :age 42))
+(define antoinette (make-instance Person :name 'antoinette :age 37))
+(define albert     (Person "albert" 33)) ;; quick way
+(define simon (make-instance Writer :name "simon"   :books '(my-life my-bike)))
+
+(mailto simone simon)
+(mailto simone antoinette)
+(mailto simon albert) ;; super
+(mailto simon simon)
+
+
+(define Female (make-class 'Female '(Person) null))
+
+
+
+http://cl-cookbook.sourceforge.net/clos-tutorial/
+http://www.cs.northwestern.edu/academics/courses/325/readings/graham/chap11-notes.html
+https://en.wikibooks.org/wiki/Common_Lisp/Advanced_topics/CLOS/Example_1
+
+
+ slot | (slot :initarg keyword)
+ 
+ (defclass circle ()
+  ((radius :accessor circle-radius :initarg :radius)
+   (center :accessor circle-center :initarg :center))
+  (:default-initargs
+    :radius 1
+    :center (cons 0 0)))

@@ -1,0 +1,18 @@
+;; http://rosettacode.org/wiki/Averages/Simple_moving_average
+(require 'tree) ;; queue operations
+
+(define (make-sma p)
+	(define Q (queue (gensym)))
+	(lambda (item)
+		(q-push Q item)
+		(when (> (queue-length Q) p) (q-pop Q))
+		(// (for/sum ((x (queue->list Q))) x)  (queue-length Q))))
+		
+		
+(define serie '(1 2 3 4 5 5 4 3 2 1))
+(define sma-3 (make-sma 3))
+(define sma-5 (make-sma 5))
+(decimals 4)
+(for ((x serie)) (printf "%3d %10d %10d" x (sma-3 x) (sma-5 x)))
+
+	

@@ -1,0 +1,33 @@
+;; test
+
+(require 'struct)
+
+
+(struct animal ((legs 0) (eyes 0)) #:initialize animal-init)
+(define (animal-init a)  (writeln 'animal-init) (set-animal-legs! a 4))
+
+(struct cat animal ((tails 9)) #:initialize cat-init  #:tostring cat-show)
+(define (cat-show cat:c) (format "🐱 %d %d %d" c.legs c.eyes c.tails))
+(define (cat-init cat:c)  (writeln 'cat-init) (set-cat-eyes! c 3/2))
+
+
+;;🐕
+;;🐠
+;;🐬
+
+(struct dog animal ((tails 1)))
+(require 'types)
+
+(define-method (run animal:a ) (writeln 'animal a 'running))
+(define-method (run cat:c) (writeln 'cat c 'running 'with c.tails 'tails ))
+(define-method (run cat:c number:speed) (writeln 'cat c 'running-at speed)) 
+(define-method (run dog:d) 
+			(call-super run d)
+			(writeln 'dog d 'running))
+
+(define milou (dog))
+(define felix (cat))
+
+(run milou)
+(run felix 333)
+

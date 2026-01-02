@@ -1,0 +1,23 @@
+(define (f x) (while (> x 0) (if (= x 666) 999 88888) (set! x (1- x))))
+[10]→ f
+(compile 'f "-v-f")
+💡 [0]     compiling _🔶_f ((#while (#_>_xi _x 0) (#if (#_=_xi _x 666) 999 88888) (#set! _x (#sub1 _x))))
+var ref,top = _blocks[_topblock];
+/* */return (
+/* */(function (env) {
+var cond; while((cond = (_stack[top] > 0 ? _true : _false)) && (cond !== _false)) ((((_stack[top] === 666 ? _true : _false) !== _false) ? (999) : (88888)), (_stack[top] = (_stack[top] - 1))) ; return _false; } (env))
+/* */);
+
+function foo (x) {
+var cond ;
+while ((cond = (x > 0 ? true : false)) && (cond !== false))
+(
+	((( x === 666 ? true : false) !== false) ? 999 : 888) ,
+	break ,
+	(x = (x - 1 ))) ;
+return false ;
+}
+
+must implement 
+#:break lispcond
+--> (lispcond === _true ? (throw ....) : 0)

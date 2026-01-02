@@ -1,0 +1,36 @@
+;; https://cloud.google.com/prediction/docs/developer-guide
+
+
+Client ID
+896621327057-q88j8rgskq6c7ptgkp2s9b3i0ubf550f.apps.googleusercontent.com
+
+downloaded in xxxx.json
+
+
+
+{
+ "kind": "prediction#training",
+ "id": "echotest",
+ "selfLink": "https://www.googleapis.com/prediction/v1.6/projects/896621327057%20/trainedmodels/echotest",
+ "storageDataLocation": "echolisp-test/language_id.txt"
+}
+
+
+
+{
+ "kind": "prediction#training",
+ "id": "echotest",
+ "selfLink": "https://www.googleapis.com/prediction/v1.6/projects/896621327057/trainedmodels/echotest",
+ "created": "2016-02-04T21:31:43.507Z",
+ "trainingComplete": "2016-02-04T21:41:56.533Z",
+ "modelInfo": {
+  "numberInstances": "406",
+  "modelType": "classification",
+  "numberLabels": "3",
+  "classificationAccuracy": "0.99"
+ },
+ "trainingStatus": "DONE"
+}
+
+
+

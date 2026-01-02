@@ -1,0 +1,62 @@
+#|
+combinations
+return , one at a time, all combinations of p items among a list
+
+usage :
+(define mylist '( a b c d e))
+(comb-next mylist 3) -> (a b c)
+(comb-next mylist 3) -> (a b d)
+(comb-next mylist 3) -> ...
+...
+;; re-starts with new p
+(comb-next mylist 2) --> ( a b )
+|#
+
+
+;; mark first of sublist lst with p >= 0 and add p consecutives marks p-1 ... 0
+;; returns : not used
+(define (p-mark lst p)
+	(mark lst p)
+	(when (> p 0) (p-mark (cdr lst) (1- p))))
+	
+;; mark-filter:1
+;; extracts list of all marked sub-lists, last first
+;; included in EchoLisp 2.4.34
+#|
+(define (mark-filter lst (acc null))
+		(cond 
+		((null? lst) acc)
+		(else (mark-filter (cdr lst) (if (mark? lst) (cons lst acc) acc)))))
+|#
+		
+;; if marker m cannot go on, reset it, and avanti marker m+1
+;; begin with rightmost marker, numbered m=0
+;; returns : not used
+
+(define (p-avanti lst p) 
+(for ((marker (mark-filter lst)) (m p ))
+	 (unmark marker)
+	 (when (> (length marker) (1+ m))
+	 	(p-mark (cdr marker) m)
+	 	(break #t))))
+	 
+;; init markers if none, or p changed
+;; returns next combination of p objects among lst
+;; rem : loops if last combination reached (i.e no more marks)
+
+(define (comb-next lst p)
+	   (set! p (max 1 (min p (length lst))))
+	   (unless (= p (length (mark-filter lst))) ;; init needed if new p
+	   	    ;; (writeln 'comb-next:init lst 'p: p 'Cnp= (Cnp (length lst) p))
+	   		(maplist unmark lst) ;; unmark all
+	   		(p-mark lst (1- p)))
+	   	(begin0
+	   		(reverse (map car (mark-filter lst))) ;; return all marked
+	   		(p-avanti lst p ))) ;; and advance markers
+	   
+(display "usage: (define mylist ...) (comb-next mylist p)" "color:green")
+
+
+
+		
+	

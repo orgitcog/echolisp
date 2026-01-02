@@ -1,0 +1,101 @@
+
+;; http://rosettacode.org/wiki/Sequence_of_primes_by_Trial_Division
+
+(lib 'sequences)
+
+(define (is-prime? p)
+	(cond
+	[(< p 2) #f]
+	[(zero? (modulo p 2)) (= p 2)]
+	[else 
+		(for/and ((d [3 5 .. (1+ (sqrt p))] ))  (!zero? (modulo p d)))]))
+		
+
+(define (is-prime? p)
+	(cond
+	[(< p 2) #f]
+	[(zero? (modulo p 2)) (= p 2)]
+	[(zero? (modulo p 3)) (= p 3)]
+	[(zero? (modulo p 5)) (= p 5)]
+	[else  ;; step 6 : try divisors 6n+1 or 6n+5
+		(for ((d [7 13 .. (1+ (sqrt p))] ))  
+			#:break (zero? (modulo p d)) => #f
+			#:break (zero? (modulo p (+ d 4))) => #f
+			#t )]))
+		
+
+;;; SEQUENCES
+
+;; bounded - native function
+	(primes 100)
+	
+;; bounded - list filter
+	(filter is-prime? (range 1 100))
+	
+;; unbounded - filter a sequence
+(define f-primes (filter is-prime? [2 .. ]))
+[8]→ f-primes
+f-primes
+[9]→ # 👓 filter: #sequence [1 2 .. Infinity[
+(take f-primes 25)
+[10]→ (2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97)
+
+
+
+;; unbounded stream
+		
+(define (s-next-prime n) ;; n odd
+		(for ((p [n (+ n 2) .. ] ))
+				#:break (is-prime? p) =>  (cons p (+ p 2))))
+			
+(define s-primes (stream-cons 2 (make-stream s-next-prime 3)))
+
+[15]→ s-primes
+(take s-primes 25)
+[16]→ (2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97)	
+
+
+;;; Generator
+(define (g-next-prime n)
+		(define next 
+		(for ((p [n .. ] )) #:break (is-prime? p) =>  p ))
+		(yield next)
+		(1+ next))
+(define g-primes (make-generator g-next-prime 2))
+(take g-primes 25)	
+
+
+
+;;;
+(lib 'tasks)
+(lib 'bigint)
+
+(define (t-next-prime n)
+		(define next
+		(for ((p [n .. ] )) #:break (is-prime? p) =>  p ))
+		(writeln next) ;; or whatever action here
+		(1+ next)) ;; unbounded : return #f to stop or CTRL-C
+		
+		
+
+(define t-primes (make-task t-next-prime 1_000_000_000_000))
+[8]→ t-primes
+(task-run t-primes)
+[9]→ #task:id:95:running
+1000000000039    
+1000000000061    
+1000000000063    
+1000000000091    
+1000000000121    
+1000000000163    
+*stopped*
+
+;; native
+
+
+
+		
+	
+
+		
+	

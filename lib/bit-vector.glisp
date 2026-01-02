@@ -1,0 +1,5 @@
+;;  http://research.cs.wisc.edu/techreports/1990/TR909.pdf
+;;  http://rosettacode.org/wiki/Sieve_of_Eratosthenes
+
+(require 'types)
+

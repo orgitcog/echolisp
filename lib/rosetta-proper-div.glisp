@@ -1,0 +1,31 @@
+;; http://rosettacode.org/wiki/Amicable_pairs
+
+(lib 'bigint)
+
+(cache-size 100000)
+(define (sumdiv n )
+	(define g (group (prime-factors n)))
+	(- (/
+		(for/product ((lp g)) (1- ( * (first lp) (apply * lp))))
+		(for/product ((lp g)) (1- (first lp)))) n))
+(remember 'sumdiv)
+		
+
+;; O(N) procedure, provided we have enough memory
+(define (amicable N)
+	(cache-size N)
+	(remember 'sumdiv #(0 0)) ;; init cache
+	(for ((m (in-range 2 N))) (sumdiv m)) ;; fill cache
+	
+	;; amicable if K[ K [m]] = m
+	(define K (cache 'sumdiv))
+	(define n 0)
+	(for/list ((m (in-range 2 N)))
+		(set! n (vector-ref K m))
+		#:continue (>= n  N)
+		#:continue (<= n m)
+		#:continue (!= (vector-ref K n) m)
+		(cons m n)))
+
+	
+	  

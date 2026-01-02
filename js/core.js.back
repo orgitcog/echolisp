@@ -1,0 +1,1974 @@
+/*
+* Glisp (C) Echolalie & G.Brougnard
+* Core primitives
+* https://developer.mozilla.org/fr/docs/Web/JavaScript/Reference/Fonctions_et_portee_des_fonctions/arguments
+https://developer.mozilla.org/fr/docs/Web/JavaScript/Reference/Objets_globaux/Function/apply
+
+* http://c2.com/cgi/wiki?ImplementingLisp   <=====  GENERAL
+* http://letoverlambda.com/textmode.cl/guest/chap2.html
+* http://repl.it/languages/Scheme <== INTERPRETER
+* http://www.gnu.org/software/mit-scheme/documentation/mit-scheme-ref/index.html#Top    [REF]
+* http://jsperf.com/implementation-of-lisp-like-lists-in-javascript <== PERFS
+* ftp://ftp.cs.utexas.edu/pub/garbage/cs345/schintro-v13/schintro_toc.html <==== INNERsS
+
+* http://www.sonoma.edu/users/l/luvisi/sl5.c <== tail recurse
+* https://groups.csail.mit.edu/mac/ftpdir/scheme-reports/r5rs-html.old/r5rs_22.html  <== tail contexts
+http://www.cs.indiana.edu/~dyb/papers/3imp.pdf <== tail
+
+* http://docs.racket-lang.org/reference/boxes.html
+*/
+
+/*
+U T I L S
+*/
+function assert(condition, message) {
+    if (!condition) {
+        message = message || "Assertion failed";
+        if (typeof Error !== "undefined") {
+            throw new Error(message);
+        }
+        throw message; // Fallback
+    }
+}
+
+/*
+null? number? integer? pair? symbol? boolean? string?
+isSomething : js function, returns any or false
+_somethingp : predicate, returns _true (#t) or _false (#f) GLisp objects
+*/
+
+/// JS TYPES
+
+if(!Array.isArray) {
+  Array.isArray = function(arg) {
+    return Object.prototype.toString.call(arg) === '[object Array]';
+  };
+}
+
+function isQuoteSymbol(obj) { // used in compile only
+	return isSymbol(obj) && 
+	(obj.name === "'"  || obj.name === "`" || obj.name === ",@" || obj.name === ",");
+	}
+	
+function isAny(obj) {return true;}
+
+/// GLISP TYPES & predicates
+// Numbers
+function isInteger( obj) {
+	return (obj instanceof Integer || isJSInteger(obj)) ;
+}
+
+function isNumber (obj) {
+	return (typeof obj === "number"  
+		|| (obj instanceof Complex) 
+		|| (obj instanceof Integer) 
+		|| (obj instanceof Rational)) ;
+}
+
+function _integerp (obj) {
+	return (obj instanceof Integer || isJSInteger(obj)) ? _true : _false;
+}
+
+function _numberp (obj) {
+	return (typeof obj === "number"  
+			|| (obj instanceof Complex) 
+			|| (obj instanceof Integer) 
+			|| obj instanceof Rational) ?
+			_true : _false  ;
+}
+
+function isRational(obj) {
+	return obj instanceof Rational ;
+	}
+
+function isZero(obj) {
+	if(typeof obj === "number") return (obj === 0) ;
+	return  obj.isZero() ;
+}
+
+function isPositive( obj) {
+		if(typeof obj === "number")  return (obj >= 0);
+		return obj.isPositive();
+}
+function isNegative( obj) {
+		if(typeof obj === "number")  return (obj < 0);
+		return ! obj.isPositive();
+}
+function _positivep (obj) {
+		if(typeof obj === "number")  return (obj >= 0) ? _true : _false ;
+		return obj.isPositive() ? _true: _false ;
+}
+
+function _spositivep (obj) { // obj > 0
+		if(typeof obj === "number")  return (obj > 0) ? _true : _false ;
+		return obj.iZero() ? _false :  obj.isPositive() ? _true: _false ;
+}
+function _negativep (obj) {
+		if(typeof obj === "number")  return (obj >= 0) ? _false : _true ;
+		return obj.isPositive() ? _false: _true ;
+}
+
+function _zerop(obj) {
+	return isZero (obj)  ? _true: _false;
+}
+
+
+// Symbols
+function isSymbol(obj) {
+	return obj instanceof Symbol;
+}
+function isSymbolOrFormal(obj) {
+	return obj instanceof Symbol || obj instanceof Formal ; 
+}
+function isQualified(name) {
+	return name.indexOf(".") >= 0;
+	}
+	
+function packName(name) { // returns null of pack Name
+	if(name.indexOf(".") === -1) return null;
+    return name.split('.')[0];
+}
+
+function simpleName(name) { // remove pack name
+	var r = name.split('.');
+	return r[r.length-1];
+}
+	
+// Lists
+// isQuote(quote foo) ---> true
+function isConstant(obj) {
+	return (isSymbol(obj) && obj.constant) ;
+}
+function isValues(obj) { // compiled expr
+	return (isListNotNull(obj) && obj[0] === _values );
+}
+
+function isQuote(obj) { // compiled expr
+	return (isListNotNull(obj) && obj[0] === _quote );
+}
+function isUnquote(obj) { // compiled expr
+	return (isListNotNull(obj) && obj[0] === _unquote );
+}
+function isUnquote_splicing(obj) { // compiled expr
+	return (isListNotNull(obj) && obj[0] === _unquote_splicing );
+}
+function isQuasiquote(obj) { // compiled expr
+	return (isListNotNull(obj) && obj[0] === _quasiquote );
+}
+function isAssocProcCall(list) {
+	return (isListNotNull(list) && (list[0] === _assoc_proc_call)) ;
+}
+
+
+function isPairSeparator(obj) {
+	return isSymbol(obj) && obj.name === "." ;
+	}
+function isString (obj) {
+	return typeof obj === "string" ;
+	}
+	
+function isList (list) { // same as isListNotNull
+		return  Array.isArray(list) && list.length === 2;
+		}
+
+function isListOrNull (list) { // (list? obj) true for null
+// not Vector here
+		return  (list === null) || (Array.isArray(list));
+		}
+
+function isListNotNull (list) { // (pair? obj)  false for Null
+		return Array.isArray(list) ;
+		}
+
+function isTrueList( cell) { // (a . b) --> false
+	return isListNotNull (cell) &&   isListOrNull (cell[1]) ;
+}
+
+function isTruePair( cell) { //  ( a . b) --> true
+	return isListNotNull (cell) &&  ! isListOrNull (cell[1]) ;
+}
+
+function isListOrSymbol (obj) {
+	return isList(obj) || obj instanceof Symbol ;
+	}
+	
+function isMacroCall(list) {
+		return isListNotNull(list) && list[0].macro ;
+		}
+function isDefine(list) {
+		return isListNotNull(list) && 
+		(list[0] === _define 
+		|| list[0] === _define_syntax
+		|| list[0] === _define_macro );
+}
+		
+function isLambda(list) { // compiled or not
+		return isListNotNull(list) && (list[0] === _lambda || list[0].name === "lambda") ;
+		}
+function isLambdaTailCall(list) { // compiled or not
+		return isListNotNull(list) && (list[0] === _lambda_tail_call) ;
+		}
+function isFLambda(list) { // compiled or not
+		return isListNotNull(list) && (list[0] === _flambda || list[0].name === "flambda") ;
+		}
+function isLet(list) { // not compiled
+		return isListNotNull(list) && list[0].name === "let" ;
+		}
+function isLets(list) { 
+		return isListNotNull(list) && list[0].name === "let*" ;
+		}
+function isLetrec(list) {
+		return isListNotNull(list) && list[0].name === "letrec" ;
+		}
+// isLambda_1 NYI
+	
+///////////////////
+// Generic to JSstring (used by (apropos, ...))
+//////////////////////
+function __toString(obj) {
+	if (isQuote (obj)) return __toString (__cadr(obj)) ; // permissive
+	return obj.toString();
+}
+		
+//////////////
+// lists internal functions assume list is a well formed one or null
+// list --> [ item_0 [ item_1 [ .... [last null]]]]
+/////////////
+function __jsmapc (jsfun,list) {
+var cell = list;
+		while(cell) { jsfun(cell[0]); cell = cell[1];}
+		return list;
+		}; // jsmapc (returns list)
+	
+/* could be MACROS */
+function __cons (item, list) { 
+		return [item , list] ;
+	}
+function __cdr(list) { // L := (cdr L)
+		if(list === null) return null; // error NYI
+		return list[1];
+		}
+function __car(list) {
+		if(list === null) return null;
+		return list[0];
+}
+function __cadr(list) {
+		return  __car(__cdr(list)) ;
+}
+function __cddr(list) {
+		return  __cdr(__cdr(list)) ;
+}
+function __caddr(list) {
+		return __car(__cddr(list));
+}
+		
+// append item (long)
+// returns list
+function __snoc(item,list) { 
+	if(list === null) return [item , null] ;
+	var cell = list;
+	while(cell[1]) cell = cell[1];
+	cell[1] = [ item, null] ;
+	return list;
+	}
+	
+function __length(list) {
+if(list === null) return 0;
+	var lg = 1;
+	while(isListNotNull(list[1])) {list = list[1]; lg++ ;  }
+	return lg;
+}
+
+// array to list
+function __listify_0 (anArray, idx) { // at depth === 0
+		if(idx === undefined) idx = 0;
+		if(idx >= anArray.length) return null;
+		return [ anArray[idx] , __listify_0(anArray,idx+1)] ;
+	} // listify
+	
+// list to array
+function __list_to_array(list) {
+	var a = [];
+	while(isListNotNull(list)) { a.push(list[0]) ;list = list[1]; }
+	return a ;
+}
+	
+function __copy_0 (list) { // at depth === 0
+if(list === null) return null;
+if(!isListNotNull(list)) return list;
+	var cop = [null,null];
+	var next = cop ;
+	while(list) {
+				next[0] = list[0];
+				if(list[1] === null) return cop;
+				list = list[1];
+				next[1] = [null, null];
+				next = next[1];				
+				}
+} // __copy_0
+
+function __copy_n (list) { // at depth n
+if(list === null) return null;
+if(!isListNotNull(list)) return list;
+	var cop = [null,null];
+	var next = cop ;
+	while(list) {
+				next[0] = __copy_n (list[0]);
+				if(list[1] === null) return cop;
+				list = list[1];
+				next[1] = [null, null];
+				next = next[1];				
+				}
+} // __copy_n
+
+// make a copy of list (not null)
+// other may be anything
+function __append_2 (list, other) { 
+if(list === null) return other;
+	var copy = [null,null];
+	var next = copy ;
+	while(list) {
+				next[0] = list[0];
+				if(list[1] === null) { next[1] = other; return copy;}
+				list = list[1];
+				next[1] = [null, null];
+				next = next[1];				
+				}
+} // __append_2
+
+// other is listified if not a list
+// modifies list and returns it
+function __listify_1 (obj) {
+	if(isListOrNull(obj)) return obj;
+	return [obj, null];
+}
+function __nconc_2 (list , other) {
+	var next = list;
+	if(list === null) return __listify_1 (other);
+	while(next) {
+		if(next[1] === null) {next[1] = __listify_1(other); return list ;}
+		next = next[1] ;
+	}
+}
+
+
+
+//////////////////////////
+// O B J E C T S 
+// run-time uses : Symbols, GLenvironments , 
+// and JS objects : tagged js functions, strings, numbers, and arrays (lists)
+// and null (special object)
+//////////////////////
+
+/**
+ *  Symbol
+ * @constructor
+ */
+
+function Symbol(name,constant, autoeval) { // autoeval implies read_only
+if(autoeval !== true) autoeval = false;
+if(constant !== true) constant = false;
+
+	var clone = glisp_look_symbol(name) ;
+	if(clone) return clone;
+
+	this.name = name; // qualified pack.name or name
+	this.pack = packName(name); // or null
+
+	this.autoeval = autoeval;
+	this.constant = constant; // true for #t,#f, ...
+	this.value = undefined; // RFU
+	this.fval = null; // (define (f x) .. )
+	this.plist = {}; // p-list object
+	this.macro = null;
+	this.syntax = null;
+	_Symbols.push(this);
+	
+	this.toString = function () {
+		if(this.macro) return 'macro:' +  this.name ;
+		if(this.syntax) return 'syntax:' + this.name;
+	return this.name; // enlever # NYI
+	}
+} // Symbol
+
+function Formal(name,block,index) {  // all must be different objects
+	this.name = name;
+	this.index = index ;
+	this.block  = block; 
+	this.value = _undefined; // for named (let foo ..)
+	
+	this.toString = function () {
+		if(this.value !== _undefined)
+		return  (isLambda(this.value)) ?
+			"&" + this.name + ":lambda(...)"  :
+			"&" + this.name + ":" + glisp_abbrev(this.value) ; // abbrev madatory (recursive lambda)
+		return  "&" + this.name + this.block  + this.index; // production : name only 
+	}
+} // Formal
+
+// MUST add arg types (an array) in sysfun object
+// signature = array of predicates (number,string,array (form),Vector, Symbol, any)
+
+function Sysfun(fname,jsfun,minarity,maxarity,sign) { // Sysfun('+',_plus,0,undefined)
+	this.name = fname;   // a string
+	this.jsfun = jsfun; // js function
+	this.minarity = minarity;
+	this.maxarity = maxarity ;
+	this.macro = false; // not used yet
+	this.doc = '';
+	this.html = "http://www.echolalie.org/glisp"; // NYI
+	this.sign = sign || [] ; // signature to check args types
+	_Sysfuns.push(this);
+	
+	this.arity = function () { // a string
+	return (this.minarity === undefined) ? ":n" :
+		   (this.minarity === this.maxarity) ? ':' + this.minarity :
+		   (this.maxarity === undefined) ?  ':' + this.minarity + ':n' :
+		   ':' + this.minarity +':' + this.maxarity ;
+		   } // arity string
+		   
+	this.checkarity = function(argc) {
+	var fname = '#[' + this.name + this.arity() + "]" ;
+//console.log("checkarity",this.name,argc,this.minarity,this.maxarity) ;
+		if(this.maxarity !== undefined  && argc > this.maxarity)  // wrong # of args
+			return glisp_error(14,argc-this.maxarity,fname);  // too many
+		if(this.minarity !== undefined  && argc < this.minarity)  // missing
+			return glisp_error(15,this.minarity-argc,fname); 
+		return true;
+		}
+		
+// static type checking : eg. special forms
+// or any _sysfun provided param value is terminal (NYI : see compile)
+	this.checktypes = function(argv) { // arg0 has index 0
+	var fname = '#[' + this.name  + "]" ;
+// glisp_trace(argv,fname,"checktypes");
+	var i = 0, arg ;
+		while(argv !== null) {
+		arg = argv[0];		
+		if(this.sign[i] && ! this.sign[i](arg))  // incorrect type
+// glisp_trace(arg,this.sign[i],"checktype KO");
+			// return glisp_error(16,arg,fname); 
+		i++;
+		argv= argv[1];
+		}
+	return true;
+	}  // check type
+		
+// returns true is all args types defined and exact match
+// matchers are is... predicates or isAny
+	this.matchtypes = function(argv) { // arg0 has index 0
+	var i = 0, arg ;
+		while(argv !== null) {
+		arg = argv[0];	
+		if(! this.sign[i]) return false; // undef type	
+		if(! this.sign[i](arg))  return false;
+		i++;
+		argv= argv[1];
+		}
+	return (i === this.minarity) && (i === this.maxarity); 
+	}  // match type
+
+		
+	this.toString = function() {
+		if(this.macro)
+		return '#[Macro '  + this.name + "]" ;
+		return '#[Sysfun ' + this.name + "]" ;
+	}
+		
+	// JS functions properties
+	jsfun.glname =  '' + fname + this.arity() ; // to show it, eg cons:2
+	jsfun.glfun = this; // RFU run-time checktypes (after evlis or args)
+	jsfun.arity =  ( minarity === maxarity) ? minarity : undefined ; // a number
+	} // Sysfun
+	
+////////////////////////
+//  Run-time JS OBJECTS
+///////////////////
+
+var glisp = {
+			time : 0,
+			ncycle: 0,
+			stopped : false,
+			error : 0,
+			env : null, /* global */
+			user : null, /* user env */
+			gensym : 1000 , /*start counter */
+			pack : null , /* import only */
+// user
+			autocomplete : 40, // frequency msec
+			max_cycles : 100,
+			results : [], // stack of evaluated things
+			defs : []  // array of definitions (source strings)
+			}; 
+			
+			
+function glisp_init () {
+		 glisp.time = Date.now(); // msec - start
+		 glisp.cycles = 0;
+		 glisp.stopped = 0;
+		 glisp.error = 0;
+		 glisp.results= [] ;
+		 glisp.defs = [] ;
+		 glisp.pack = null;
+		  _top =0 ; // a top level rep  itou NYI
+		  _topblock = 0;
+		  _blocks= [0];
+		
+		 glisp_boot();
+		 // prefs here NYI
+		
+} // glisp_init
+
+//////////
+// ENV objects
+/////////////
+/**
+ *  GLEnv
+ * @constructor
+ */
+
+function GLenv (parent,name) {
+	this.name = name;
+	this.parent = parent ; // undef for global
+	this.alist = {} ; // mimic assoc list (name . value)
+	
+	this.get = function(key) { // no distinguish between unbound and unassigned here
+	var value = this.alist[key];
+	var parent = this;
+	while  (value === undefined  && (parent = parent.parent))  // == 15 mni bogue
+		value = parent.alist[key];
+	return value;
+	} // get
+	
+	this.set = function(key,value) {
+		if(!key) return glisp_error(18,value,'_env.set');
+		this.alist[key] = value;
+	}
+	
+	// may be unbound !!
+	// so, in case of unassigned error, check unBound
+	this.isAssigned = function(ident) { // (define x) x --> unassigned
+		return this.get(ident) !== undefined ;
+		}
+		
+	// (set! x 8) Ok
+	// returns an Environment || undefined = false
+	this.isBound = function(key) { // (set! y 3) -> unbound
+		if(this.alist.hasOwnProperty(key)) return this;
+		else return (this.parent && this.parent.isBound(key)) ;
+		} // isBound 
+	
+	this.toString = function() {
+	return "#[Env " + this.name  + ']'  ; // + this.alist.toString() ;
+	}
+return this;
+} // Envt
+	
+
+///////////////////////////
+// C O M P I L E
+////////////////////
+	
+// compile a form (_values a b c ) as returned by parse()
+// makes chirurgy
+// check arity
+// returns  form
+
+function glisp_compile(form,env) {
+env = env || glisp.user ;
+	glisp_resolve(form,env);
+	return form ;
+	}
+	
+// (... "." x) -> ( ... . x )
+function glisp_pair (form) { 
+//var sform = form // dbg
+	var values = form ; // save
+	var prev = null ;
+	
+	if(isTruePair(form)) return;
+	if(isListNotNull(form))
+	while(form) {
+	var item  = form[0] ;
+	var next  = form[1];
+
+	// internal error
+	if(item === undefined)  glisp_error(13, form, 'compile:pair' ); // null
+	if(isListNotNull(item))  glisp_pair(item);
+	else if(isPairSeparator(item)) 
+				{ // chirurgy
+					if(next === null || prev === null)  // misplaced
+								glisp_error(25,values,"compile:pair"); 
+					prev[1] = next[0];
+					return ;
+					}
+	prev = form;
+	form = next; 
+	} // while next
+//	console.log("dot",sform);
+} // pair
+
+function glisp_quote (form) { 
+	var trans = { "'" : "quote", "`" : "quasiquote" , ",@" : "unquote-splicing" , "," : "unquote"} ;
+	var values = form ;
+	
+	if(isListNotNull(form))
+	while(form) {
+	var item  = form[0] ;
+	var next  = form[1];
+	// internal error
+	if(item === undefined)  glisp_error(13, form, 'compile-quote' ); // null
+	if(isListNotNull(item)) glisp_quote(item);
+	else if(isQuoteSymbol(item)) // or unquote, quasiquote, ..
+				{ // chirurgy
+				glisp_quote(next);
+					if(next === null)  glisp_error(21,item.name,"compile-quote"); 
+					var jsfun = glisp_look_sysfun(trans[item.name]).jsfun ;
+					form[0] = [jsfun , [next[0], null]];
+					form[1] = next[1];
+					next = form[1];
+					}
+	if(isTruePair(form)) return;
+	form = next; 
+	} // while next
+} // quote
+
+
+// glisp_matcher_fun
+// input : fname
+// is there a _fname_xx function ?
+// careful : FIRST ONE is chosen. So, more discriminant first in _Sysfuns.
+
+function glisp_matcher_fun(args,fname) {
+	var candidates = glisp_matcher_sysfuns("_" + fname + "_") ; 
+	for(var i = 0; i < candidates.length ; i++) {
+console.log("matcher:candidate",candidates[i]);
+	 var gFun = glisp_look_sysfun(candidates[i]);
+	 // assert(gFun)
+	 if(gFun.matchtypes(args))  return gFun ;
+	}
+	return null;
+} // glisp_matcher_fun
+
+// http://www.scheme.com/tspl2d/binding.html
+// isLambdaTerm
+// no lambda, nor let, nor NYI ... inside
+// lexical analysis
+// ((lambda(x y) (+ x ((lambda(a) (+ y a)) x))) 10 20)
+// 1 ]=> (let ((s 10)) (map (lambda(r) (+ r s)) '(1 2 3)))
+// -->  (11 12 13)
+//1 ]=> ((lambda (s) (map (lambda(r) (+ r s)) '(1 2 3))) 10)
+// http://stackoverflow.com/questions/13371530/why-does-scheme-allow-mutation-to-closed-environment-in-a-closure
+
+// replace symbols by formal = f(block)
+// input = form  === listNotNull
+
+function __lambda_close(form,block,env) {
+var sidx, fsymb;
+		while(form) {
+		fsymb = form[0];
+		if(fsymb instanceof Formal && fsymb.block > block) {
+					sidx = fsymb.index + _blocks[_topblock - fsymb.block]; 
+					// test ERR here NYI
+					fsymb.value = _stack[sidx];
+					}
+
+		// inside a let or a do and not global
+		// better if not global or user : easy : NYI
+		else if(fsymb instanceof Symbol && (env.alist[fsymb.name] !== undefined))
+				{
+				var formal = new Formal(fsymb.name,0,0);
+				formal.value = env.get(fsymb.name);
+				glex_replace(form,fsymb,formal);
+				}
+		else if(isLambda(fsymb)) // inner lambda --> block+1
+			__lambda_close(fsymb,block+1,env);
+		else if(isListNotNull(fsymb)) 
+			__lambda_close(fsymb,block,env);
+		form = form[1];
+		if(! isListNotNull (form)) break; // ( a . b) case NYI
+		}	
+} // lambda close
+
+function glex_replace_formal(form,symb,block,formal) {
+		while(form) {
+		if(isSymbol(form[0]) && form[0] === symb) 
+			form[0] =  formal ; 
+		else if(isLambda(form[0])) // inner lambda --> block+1
+			glex_replace_formal(form[0],symb,block+1,new Formal(symb.name,block+1,formal.index));
+		else if(isListNotNull(form[0])) 
+			glex_replace_formal(form[0],symb,block,formal);
+		form = form[1];
+		if(! isListNotNull (form)) break; // ( a . b) case NYI
+		}		
+} // glex_replace_formal
+
+// replace symbols by anything
+// input = form  === listNotNull
+function glex_replace(form,symb,any) {
+// glisp_trace(symb,symbarg,"replace");
+		while(form) {
+		if(isSymbol(form[0]) && form[0] === symb) 
+			form[0] =  any ; 
+		else if(isListNotNull(form[0])) 
+			glex_replace(form[0],symb,any);
+		form = form[1];
+		if(! isListNotNull (form)) break; // ( a . b) case NYI
+		}		
+} // glex_replace
+
+
+
+//////////////
+// glex_lambda
+// input expr --> (lambda ( x y) (+ x y))
+// get a stack index for each formal param
+// replaces symbols reference by formal references (stack references)
+//////////////////
+
+// ((lambda (x y) ( + x ((lambda (u) (+ u y) )x))) 56 79)
+// check symbols : NYI NYI
+function glex_lambda(expr) { // assert(isLambda(expr))
+			var formals = expr[1][0]; // lambda x or lambda( x y . z) 
+			var body =    expr[1][1] ;
+			var formal,param;
+			var argc = 0;
+			var names = [];
+// glisp_trace(expr,formals,"glex_lambda");
+
+			glex_analyze(body); // depth first mandatory (lexical binding : last wins)
+
+			if(formals === null) return;
+			if(formals instanceof Formal) return ; // already done
+			if(formals instanceof Symbol ) {  // lambda x (...)
+			param = formals;
+			formal = new Formal(param.name,0,argc) ;
+			glex_replace_formal(body,param,0,formal); // block#0 starter
+			expr[1][0] = formal;
+			return;
+			}
+			
+			while(formals) {
+					param = formals[0] ;
+					if(param instanceof Formal) return ; // already done
+					if(! (param instanceof Symbol)) 
+						return glisp_error(33,param,"lambda-params") ;
+					var index = names.indexOf(param.name); 
+					if(index === -1) names.push(param.name);
+						else return glisp_error(30,param.name,"lambda") ; // dup name
+								
+					formal = new Formal(param.name,0,argc) ;
+					glex_replace_formal(body,param,0,formal); // block#0 starter
+					formals[0] = formal; // replace
+					if(formals[1] === null) return;
+					if(formals[1] instanceof Symbol) break; // x y z . t
+					formals = formals[1];
+					argc++;
+					if(!isList (formals)) return ;
+					}
+					
+			param = formals[1];
+			formal = new Formal(param.name,0,argc+1) ;
+			glex_replace_formal(body,param,0,formal); // block#0 starter
+			formals[1] = formal;
+			return;
+} // glex_lambda
+
+////////////////
+// glex_tail_position
+// could be smart . eg (if (e) a=tail b=tail)
+// gets last of last of..last: fundef or formal fundef
+// see http://people.csail.mit.edu/jaffer/r5rs_5.html
+// find target lambda in expr - replaces by (_lambda_tail_call values ...)
+//////
+
+function glex_tail_position (target,expr,env) { // assert (isListNotNull(expr))
+	var call, last = expr, fun ;
+	while(last) {
+		if(last[1] === null) break;
+		last = last[1] ;
+		}
+	call = last[0];
+	if(isListNotNull(last)) {
+		 	fun = call[0] ;
+			if(fun === _if )  glex_tail_position (target,call,env); // best split then else NYI
+			// if(fun === _begin ) return glex_tail_position (last,env);
+			if(fun === _letrec)  glex_tail_position (target,call,env);
+			// etc .. NYI
+
+		if((fun  === target)
+		|| ((fun instanceof Symbol) &&  env.get(fun.name) === target)
+		|| ((fun instanceof Formal) &&  (fun.value === target))) {
+			last[0] = [_lambda_tail_call , call[1]] ;
+			glisp_trace(target,"tail_call  FOUND");
+			return;
+			}
+	//	if(isListNotNull(fun))  glex_tail_position (target,fun,env);
+	}
+}
+////////////////
+// glex_tail_call
+// input --> (lambda (...) body)
+// look in body
+// replaces lambda by _lambda_tail_call
+/////////////////////
+function glex_tail_call (lambda,env) { // assert(isLambda(expr))
+env = env || glisp.user ;
+return;
+	var body = lambda[1][1];
+	glex_tail_position(lambda,body,env);
+	
+} // glex_tail_call
+
+
+////////////////
+// glex_let
+// http://docs.racket-lang.org/reference/let.html
+// input -> (let [proc_id] ((id val-expr) ...) body ...+)
+// output -> ((lambda (id ...) body..) val-expr .. valexpr_n)
+// let : names must be different (NYI)
+/////////////
+
+function glex_let(expr) { 
+	// assert expr[0] = let ;
+//glisp_trace(expr,"glex_let","IN");
+	var next = expr[1];
+	var procid = null;
+	if(isSymbol(next[0])) { procid =  next[0]; next = next[1] ;}
+	var inits = next[0];
+	var body = next[1];
+	// split inits into two lists
+	var ids = null;
+	var vals = null;
+		while(inits) {
+			var id_val = inits[0];
+			var id = id_val[0];
+			var val = id_val[1][0] ;
+			if(ids === null) ids = [id,null]; else __snoc(id,ids);
+			if(vals === null) vals = [val,null]; else __snoc(val,vals);
+		inits = inits[1];
+		}
+	var lambda = [_lambda, [ ids , body ]] ;
+	
+	if(procid)  {
+					var procform = new Formal(procid.name,0,0);
+					procform.value = lambda; // autoeval &foo_0_0
+					glex_replace(body,procid,procform) ;
+					}
+					
+//glisp_trace([lambda , vals] ,"glex_let","OUT");
+	return [lambda , vals] ;
+} // glex_let
+
+////////////////
+// glex_lets
+// http://docs.racket-lang.org/reference/let.html
+// input -> (let* ((id val-expr) ...) body ...+)
+// output -> ((lambda (id) ((lambda(id2)..val_n val-1...)..body ) valexpr_n)
+/////////////
+
+function glex_lets(expr) { 
+	// assert expr[0] = lest ;
+//glisp_trace(expr,"glex_let*","IN");
+	var id, val ;
+	var next = expr[1];
+	var inits = next[0];
+	var body = next[1];
+	// split inits into two lists (reverse order)
+	var ids = null;
+	var vals = null;
+		while(inits) {
+			var id_val = inits[0];
+			id = id_val[0];
+			val = id_val[1][0] ;
+			ids = [id , ids] ;
+			vals = [val, vals];
+		inits = inits[1];
+		}
+
+	// build the lambda's
+	while(ids) {
+	body = [[_lambda ,[[ids[0],null], body]],      [vals[0],null]] ;
+	body = [body, null];
+	ids = ids[1];
+	vals = vals[1];
+	}
+//glisp_trace(body ,"glex_lets","OUT");
+	return body[0] ;
+} // glex_lets
+
+////////////////
+// glex_letrec
+// input -> (letrec  ((id val)* ...) body ...+)
+// output -> (_letrec (set! id val)* ....body )
+/////////////
+
+function glex_letrec(expr) { 
+	// assert expr[0] = lest ;
+glisp_trace(expr,"glex_letrec","IN");
+	var id, val ;
+	var next = expr[1];
+	var linits = inits = next[0];
+	var body = next[1];
+	
+	// get list ids
+	var ids = null;
+		while(inits) {
+			var id_val = inits[0];
+			var id = id_val[0];
+			if(ids === null) ids = [id,null]; else __snoc(id,ids);
+		inits = inits[1];
+		}
+	inits = linits;
+	
+	// build the (set!  x v) list and the values (undef, ...) list
+	// must detect at run-time (l-bindings) undef value NYI
+	var sets = null;
+	var vals = null;
+	while(inits) {
+	var set = [_symsetq , inits[0]] ;
+	if(sets === null) sets = [set,null]; else __snoc(set,sets);
+	vals = [_undefined,vals];
+	inits = inits[1];
+	}
+	body = _nconc(sets,body);
+	return [_letrec , body];
+} // glex_letrec
+
+/////////////
+// glex_analyze
+// sets formal parameters, transforms (patch) let[*] into lambda
+/////////////
+
+function glex_analyze(form) { 
+		if(isListNotNull(form)) 
+		while(form) {
+// glisp_trace(form[0],form[1],"analyze-form");
+		var expr = form[0] ;
+		var values = null;
+//glisp_trace(expr,depth,"lex_analyze:expr");
+		if(isLet(expr))  { form[0] = glex_let(expr); 
+						 glex_lambda(form[0][0]);
+						 glex_analyze(form[0][1]);
+						 }
+		else if(isLets(expr))    { form[0] =  glex_lets(expr);
+		 						 glex_lambda(form[0][0]);
+		 						 glex_analyze(form[0][1]);
+								 }
+		else if(isLetrec(expr))     {  form[0] =  glex_letrec(expr); 
+									glex_analyze(form[0]);
+									}
+		
+		else if(isLambda(expr) || isFLambda(expr))  // expr --> (lambda () ...)
+				glex_lambda(expr,null) ;
+			else 
+				glex_analyze(expr);
+			
+			form = form[1];
+			if(! isListNotNull (form)) break; // ( a . b) case
+		} //while
+} // glex_analyze
+
+// resolve :
+// replaces (car (== Symbol) foo) by (_car (js function) foo)
+// replaces (f 5 6) by ((lambda(x y) ...) 5 6 )
+// input : (values form_1 ... form_n)
+// resolves in place : returns nothing
+// replaces _plus by _plus_xx etc .. 
+// resolves immediate NYI
+// (vector-map lambda_1()... v ) NYI : nth position (hint : use signature)
+
+function glisp_resolve (form,env) { 
+	var values = form ;
+	var isFirst = true;
+	var gFun,item,next;
+	
+	if(isListNotNull(form)) {
+	if(form[0] === _quote) return;
+	if(form[0] === _quasiquote) return;
+
+	while(form) {
+	item  = form[0] ;
+	next  = form[1];
+	
+
+	// internal error
+	if(item === undefined)  glisp_error(13, form, 'compile:resolve' ); // null
+	
+	if(isListNotNull(item)) glisp_resolve(item,env);
+	
+	// else  if (isQuoteSymbol(item)) { } // no more quote symbs here - raise error NYI
+	else  if (isSymbol(item) && isFirst)  {// Symbol object
+console.log('resolve? ',item.name) ;
+		  gFun =     glisp_matcher_fun(next,item.name) || // look by '_name_'
+		  			 glisp_look_sysfun(item.name); // or by 'name'
+		  if(gFun)  {
+		 			form[0] = gFun.jsfun ; // patch
+		 			gFun.checkarity(__length(next)) ;
+		 			gFun.checktypes(next);
+console.log('resolve:',item.name, ' --> ',gFun.jsfun.glname);
+		 			}
+		 			
+		 // special forms (define-macro, etc..) NYI
+		if(form[0] === _define) next = next[1] ; // skip (f x)
+
+		 form = next ;
+		 isFirst = false;
+		 continue;
+		 } // Symbol & First
+		 
+	if(isTruePair(form)) {glisp_resolve(next,env); return; }
+	
+// NOT FIRST
+	if(isConstant(item)) form[0] = env.get(item.name) ;
+
+	
+// pre-eval sysfuns everywhere : DANGEROUS - check at least quoted NYI
+	if (isSymbol(item)) {
+			gFun = glisp_look_sysfun(item.name);
+			if(gFun) form[0] = gFun.jsfun ;
+			}
+	
+	form = next; 
+	isFirst = false;
+	}} // while form
+} // resolve
+
+
+
+// NYI replace (f a b c) by (lambda ( x y z) a b c ..)
+// in env , that is before eval or patch form  at run-time?? dangerous
+
+/////////////////////////
+// E V A L
+// Notations :
+//  arg_i : INDEX of arg # i in array [args]
+// __fun : deep internal, not user visible
+//  _fun : user visible - name or symbol in Sysfun object
+// stack format
+//  -1 [block_n] [block n-1] .... top -->  [block 0]
+//     [block_i] : arg_0 arg_1 .. 
+///////////////////////////
+
+var _stack = []; // stack of values (any obj)
+var _top = 0;   // next to push
+var _blocks = [0] ; // blocks[i] --> base of stack
+var _topblock = 1; // next to push
+
+// _eval (form)
+function __eval(form,env) {
+var sidx; // stack index
+glisp.ncycle++;
+
+ 	if((typeof form === "number") ||
+ 	(form instanceof Integer) ||
+ 	(form instanceof Rational) ||
+ 	(form instanceof Complex)) return form;
+	if(! env instanceof GLenv) return glisp_error(1,form,"eval") ;
+	
+// Eval Formal param
+	if(form instanceof Formal) {
+//	glisp_trace(form,"","eval formal -->" );
+		if(form.value !== _undefined) {
+//				glisp_trace(form,"","formal.value <--");
+				return form.value;     // closure
+				}
+	
+	
+		sidx = form.index + _blocks[_topblock - form.block]; // N hours bogue - cf LET NYI
+/*
+console.log("stack",_stack);
+console.log("blocks",_blocks);
+console.log("_top",_top,"_topblock",_topblock,"sidx",sidx,"form.index",form.index,"f.block",form.block);
+*/
+
+		  if(form.block > _topblock) return glisp_error(28,form.block,"block#" + _topblock) ; // tail removed
+		 if(sidx >= _top ) return glisp_error(28,sidx,"stack[" + _top +"]"); 
+		// stack ovflow NYI
+		if(sidx >= 2000 ) return glisp_error(29,sidx,"stack[" + _top +"]"); // NYI
+//glisp_trace(form,_stack[sidx],"eval formal <-- " + sidx);
+		return _stack[sidx] ;
+	} // Formal
+
+	
+// Eval jsArray : List 
+	if(Array.isArray(form)) {
+// Quoted
+		if(isQuote(form)) return form[1][0];	
+// GLisp List 
+		return  __funcall(form,env); 
+		}
+		
+// Terminals
+		else {
+			if(form instanceof Box) return form;
+			if(form instanceof Promise) return form;
+			if(typeof form === "string") return form;
+			if(typeof form === "function") return form;
+			if(form === null) return null;	
+			// assert(isSymbol(form))
+			if(form.autoeval) return form;
+			if(form instanceof Symbol)
+				return  env.get(form.name)  || glisp_error (17,form.name,"eval"); // Symbol 
+			if(form === undefined) glisp_error(13,undefined,"eval"); // bad mess NYI
+
+		} // not Array
+} // glisp_eval
+
+/////////////////
+// F U N C A L L
+// _funcall (fun arg0 ... argn)
+// fun := lambda || user fun || primitive
+// returns : a value (s-expr) or atom or null
+// evaluates args
+/////////////
+
+function __funcall(form,env) {
+//glisp_trace(env,form,"funcall");
+	var lambda = null , fvalue = null , sidx , argv , argc, save_top, ret ,
+	arg0, arg1, arg2 , arity;
+	var fun = form[0];  // car : the fun
+
+// 1) js primitive = compiled Sysfun
+	if(typeof fun === "function")  { 
+			if(fun.special) return fun(form,env); // special is called with self
+			argv = form[1]; // --> cdr : list of args values
+			
+			// 0:0 1:1 2:2 ... sys funs
+			// #[arity-dispatched-procedure nn]
+			if(fun.arity === undefined) {  // n:m sysfun's - use stack
+				argc = 0;
+				save_top = _top;
+			// eval and PUSH args 
+				while(argv) { 
+					argc++;
+					_stack[_top++] = __eval(argv[0],env) ;
+					argv = argv[1] ;
+					}
+				ret =  fun(save_top,argc) ; // eg (list x y z t ...)
+				_top = save_top; // POP
+			return ret;
+			}
+
+			arity = fun.arity; 
+			if(arity === 0) return fun(env);
+			arg0 = argv[0]; // BEST isImmediate() NYI
+			if(typeof arg0 !== "number") arg0 = __eval(arg0,env);
+
+			if(arity === 2)  {
+						arg1 = argv[1][0];
+						if(typeof arg1 !== "number") arg1 = __eval(arg1,env);
+						return fun(arg0,arg1);
+						}
+			if(arity === 1)  return fun(arg0);
+			if(arity === 3)  {
+					arg1 = argv[1][0];
+					if(typeof arg1 !== "number") arg1 = __eval(arg1,env);
+					arg2 = argv[1][1][0];
+					if(typeof arg2 !== "number") arg2 = __eval(arg2,env);
+					return fun(arg0,arg1,arg2);
+					}
+			if(arity === 4) return fun(arg0,
+								 __eval(argv[1][0],env),  
+								 __eval(argv[1][1][0],env),
+								 __eval(argv[1][1][1][0],env));
+			// internal error  here NYI
+			} // _xxxxx function called
+			
+//// fval /////
+// CHECK fval for macros ...
+
+	if(fun instanceof Symbol) {
+			if(fun.fval) { // (define (f x) ...)
+			lambda = fun.fval[1];
+		
+			// if(debug...) to speed up
+			if(fun.plist["trace"]) {
+			var ret =  __lambda_call(lambda[0],lambda[1],form[1],env,fun); //(params) (body) (argv)
+			glisp_trace("<--",ret,fun);
+			return ret;
+			}
+			return __lambda_call(lambda[0],lambda[1],form[1],env); //(params) (body) (argv)
+			} // fun.fval
+			
+		 fvalue = env.get(fun.name); // (define f sin)
+		 // ONE more CONS (bad)
+		 if(typeof fvalue === "function") 
+		 			return __funcall([fvalue, form[1]],env) ;
+		 			else return glisp_error(47,fun.name,'funcall'); // not a function
+		 } // Symbol
+		
+		
+//// lambda /////
+// (3) pure lambda 
+// NYI : should get the env from lambda ... in _lambda_call
+
+	if(isLambda(fun))  {  // fun[0] === _lambda NYI
+		lambda = fun[1]; // skip 'lambda'
+		return __lambda_call(lambda[0],lambda[1],form[1],env); //(params) (body) (argv)
+		}
+	
+// (5) ///// flambda  (macro) /////
+	if(isFLambda(fun)) { // fun[0] === _flambda NYI
+		lambda = fun[1];
+		return __flambda_call(lambda[0],lambda[1],form[1],env); //(params) (body) (argv)
+		}
+
+	
+// (3bis) formal bound to lambda. eg (define (f g x y ) (g x y))
+	if(fun instanceof Formal) {
+		if(fun.value !== _undefined) // case (let foo ((..) (foo x)))
+			fvalue = fun.value ; // 1 H bogue
+			else {
+					sidx = fun.index + _blocks[_topblock - fun.block];
+					fvalue = _stack[sidx];
+					}
+glisp_trace(fun,fvalue,"formal-->lambda");
+		if(typeof fvalue === "function") return __funcall ([fvalue , form[1]], env);
+		} 
+// end Formal 
+
+	    else {
+	    // console.log("FVALUE", fun.name);
+	    fvalue = env.get(fun.name); // LONG !!!!! OPTIMIZE POSSIBLE : done : fval
+	    }
+	    
+// 
+				
+		if(isLambda(fvalue)) {
+			lambda = fvalue[1];
+			return __lambda_call(lambda[0],lambda[1],form[1],env); //(params) (body) (argv)
+		}
+		if(isFLambda(fvalue)) {
+			lambda = fvalue[1];
+			return __flambda_call(lambda[0],lambda[1],form[1],env); //(params) (body) (argv)
+		}
+		
+// special
+// ((assoc-proc-call pred sel) obj alist)
+		if(isAssocProcCall(fvalue)) {
+		 argv = form[1]; // --> cdr : list of args values
+		 fvalue = fvalue[1];
+		 return  __assoc_proc_call(__eval(argv[0],env) , // obj
+								   __eval(argv[1][0],env), // alist
+								   fvalue[0] ,  // pred
+								   fvalue[1][0] , env); // selector
+		}
+		
+// (7) Eval to  fun ? eg ((if (> a b)  +  *) a b ) 
+	if(isListNotNull(fun))  // self eval --> infinite loop NYI easy test
+		return __funcall([__eval(fun,env) , form[1]],env) ;
+		
+
+// bottom
+	return glisp_error(12,fun,'#funcall'); // object not applicable
+} // __funcall
+
+/////////////////
+// F F U N C A L L
+// _ffuncall (fun arg0 ... argn)
+// DO NOT evaluates args
+/////////////
+
+function __ffuncall(form,env) {
+//glisp_trace(env,form,"funcall");
+	var lambda = null , fvalue = null , sidx , argv , argc, save_top, ret ;
+	var fun = form[0];  // car : the fun
+// special ?
+	if(typeof fun === "function" && fun.special) 
+		return fun(form,env); // special is called with self
+
+// 2) js primitive ?
+	if(typeof fun === "function")  { 
+			argv = form[1]; // --> cdr : list of args values
+			
+			// 0:0 1:1 2:2 sys funs
+			// #[arity-dispatched-procedure nn]
+			if(fun.arity === 2) return fun(argv[0],argv[1][0]);
+			if(fun.arity === 1) return fun(argv[0]); 
+			if(fun.arity === 3) return fun(argv[0],argv[1][0], argv[1][1][0]);
+			if(fun.arity === 4) return fun(argv[0],argv[1][0], argv[1][1][0] , argv[1][1][1][0]);
+			if(fun.arity === 0) return fun(env);
+			
+			// function evlis2stack here NYI
+			// n:m sysfun's - use stack
+			//var top = _stack.length;  // LONG
+			argc = 0;
+			save_top = _top;
+			// eval and PUSH args 
+			while(argv) { 
+				argc++;
+				_stack[_top++] =argv[0] ;
+				argv = argv[1] ;
+				}
+				
+			ret =  fun(save_top,argc) ; // eg (list x y z t ...)
+			_top = save_top;
+			//_stack.length = top ; // POP
+			return ret;
+			} // _xxxxx function called
+			
+//// fval /////
+// CHECK fval for macros ...
+
+	if(fun instanceof Symbol && fun.fval) {
+		lambda = fun.fval[1];
+		return __flambda_call(lambda[0],lambda[1],form[1],env); //(params) (body) (argv)
+		}
+		
+//// lambda /////
+// (3) pure lambda 
+	if(isLambda(fun))  {  // fun[0] === _lambda NYI
+		lambda = fun[1]; // skip 'lambda'
+		return __flambda_call(lambda[0],lambda[1],form[1],env); //(params) (body) (argv)
+		}
+	
+
+// (3bis) formal bound to lambda. eg (define (f g x y ) (g x y))
+	if(fun instanceof Formal) {
+		if(fun.value !== _undefined) // case (let foo ((..) (foo x)))
+			fvalue = fun.value ; // 1 H bogue
+			else {
+					sidx = fun.index + _blocks[_topblock - fun.block];
+					fvalue = _stack[sidx];
+					}
+glisp_trace(fun,fvalue,"formal-->lambda");
+		if(typeof fvalue === "function") return __ffuncall ([fvalue , form[1]], env);
+		} 
+// Formal 
+	    else fvalue = env.get(fun.name); // LONG !!!!! OPTIMIZE POSSIBLE : done : fval
+				
+		if(isLambda(fvalue)) {
+			lambda = fvalue[1];
+			return __flambda_call(lambda[0],lambda[1],form[1],env); //(params) (body) (argv)
+		}
+		if(isFLambda(fvalue)) {
+		// error here NYI
+		}
+		
+// bottom
+	glisp_error(12,fun,'funcall-apply'); // object not applicable
+	return null;
+} // __funcall
+
+/////////////////
+// L A M D A  B I N D
+/////////////////////////
+// bumps top
+// check same number NYI
+
+function __lambda_bind(formals,values,env,fun) { // trace if fun is set
+//glisp_trace("formals",formals,"lambda-bind");
+//glisp_trace("values",values,"lambda-bind");
+
+		if(formals instanceof Formal) { // lambda x (...)
+		_stack [_top++ ] = __evlis(values,env);
+		return env;
+		}
+		while(formals) {
+		if(!values) return glisp_error(15,formals[0],"lambda-bind") ; // needs an Id NYI
+		if(typeof values[0] === "number")
+			_stack[ _top++]  = values[0] ;
+			else
+			_stack[ _top++]  = __eval(values[0],env) ;
+if(fun) glisp_trace(formals[0],_stack[_top-1],"--> " + fun.name);
+		formals = formals[1] ;
+		values = values[1];
+		if(formals instanceof Formal) break; // (x y z . u )
+		} // bindings
+		if(formals === null) return env ;
+		_stack[_top++] = __evlis(values,env); // bind rest
+if(fun) glisp_trace(formals,_stack[_top-1],"--> " + fun.name);
+		
+	return env; // ??? NYI
+} // lambda_bind
+
+function __flambda_bind(formals,values,env) {
+		if(formals instanceof Formal) { // flambda x (...)
+		_stack [_top++ ] = values ;
+		return env;
+		}
+		while(formals) {
+// glisp_trace(values[0],formals[0],"flambda-bind");
+		if(!values) return glisp_error(15,formals[0],"flambda-bind") ; // needs an Id NYI
+		_stack[ _top++]  = values[0]; // do not eval
+		formals = formals[1] ;
+		values = values[1];
+		if(formals instanceof Formal) break; // (x y z . u )
+		} // bindings
+		
+		if(formals === null) return env ;
+		_stack[_top++] = values; // bind rest
+
+	return env; // ??? NYI
+} //flambda_bind
+
+///////////////
+// __evlis (list env) -> new list
+///////////////
+function __evlis (list, env) {
+	if(list === null) return null;
+	var ret = [null,null];
+	var last = ret;
+		while(list) {
+			last[0] = __eval(list[0],env);
+			if(list[1] === null) return ret ;
+			last[1] = [null,null];
+			last = last[1];
+			list = list[1];
+			}
+	return ret;
+}
+
+
+//////////
+// lambda-call args (x y) body (+ x y) values ( 5 foo())
+// looks like a let (and not let*)
+//////
+function __lambda_call(params,body,values,env, fun /* to trace */) {
+//glisp_trace(params,body,"lambda-call");
+	var loop = true ,save_top = _top, ret, newenv ;
+	newenv = __lambda_bind(params,values,env, fun); // increases top
+	_blocks[++_topblock] = save_top;
+
+	// var ret =  __begin(body,newenv);
+	while(loop) {
+	loop = false;
+	for(var expr = body ; expr != null ; expr = expr[1]) {
+		ret = __eval(expr[0],newenv);
+		
+		if(isListNotNull(ret) && ret[0] === _lambda_tail_call) { // speed me NYI
+			_top = save_top ;
+			_topblock--;
+			__lambda_bind(params,ret[1],env, fun) ;
+			_topblock++;
+			loop = true;
+			break; // ???
+			}
+			
+		} // for expr
+	} // while loop
+	_top = save_top;
+	_topblock--;
+//glisp_trace(ret,_top,"lambda-ret: " + _top);
+	return ret;
+} // _lambda call
+
+//////////
+// flambda-call : do not eval
+//////
+
+function __flambda_call(params,body,values,env) {
+	var save_top = _top;
+	var newenv = __flambda_bind(params,values,env); // increases top
+	var ret ;
+	_blocks[++_topblock] = save_top;
+	// var ret =  __begin(body,newenv);
+	for(var expr = body ; expr != null ; expr = expr[1]) 
+		ret = __eval(expr[0],newenv);
+	_top = save_top;
+	_topblock--;
+	return ret;
+} // _flambda call
+
+function _lambda_tail_call(self,env) {
+	return self;
+} // _lambda call
+
+
+//////
+// __bind : ' do, ..' bind
+// input : ((<variable1> <val1> [<step1>])  ...) 
+// output : nothing
+// if env === newenv : sequential , else parallel
+///////
+function __bind(list, env, newenv) {
+	if(! env || ! newenv ) 
+		return glisp_error(1,"undefined environment","bind") ; 
+	while(list) {
+		var binding = list[0];
+		newenv.set(binding[0].name,__eval(binding[1][0],env)) ;
+		list = list[1];
+	}
+} // __bind
+
+function __begin(exprs, env) {
+	var ret = null;
+	for(var expr = exprs ; expr != null ; expr = expr[1]) {
+// glisp_trace("expr",expr[0],"__begin");
+		ret = __eval(expr[0],env);
+		}
+	return ret;
+} // __begin
+
+
+///////////////////////
+// S P E C I A L    P R I M I T I V E S
+///////////////////
+
+var _values = function (self,env) { // MUST return a new LIST !!! NYI
+	for(var expr= self[1];expr !==null; expr=expr[1])
+		expr[0] = __eval(expr[0],env) ;
+	return self;
+	}
+	
+
+///////// D E F I N E ///////
+// http://www.scheme.com/tspl2d/binding.html
+// (define (f x)  ...)
+/////////////////
+
+var _undefine = function(self,env) {
+	var form = self[1];
+	var item = form[0]; // symb
+	if(! isSymbol (item)) return glisp_error(27,item,"undefine");
+	if(item.readonly) return glisp_error(19,item,"undefine");
+	env.set(item.name,undefined);
+	item.fval = undefined;
+	glisp_push_def(item,null);
+	return item;
+}
+
+var _define = function (self,env,flambda) { // form -->( [ a | (f x y)]  rest ...)
+	var form = self[1];
+	var item = form[0]; // symb
+	var rest = form[1];
+	var lambda, value;
+	
+	if (isList(item)) { // (define (f a . r)) 
+		var fsymb = item[0]; // function name CHECK isSymbol 
+		if(!isSymbol (fsymb)) return glisp_error(27,fsymb,"define");
+
+// loading package defs
+		if(glisp.pack && packName(fsymb.name) === null)
+			fsymb = new Symbol(glisp.pack + "." +fsymb.name);
+//
+		var formals =  item[1];
+		if(flambda)
+			lambda = [_flambda, [formals, rest]] ;
+			else
+			lambda = [_lambda, [formals, rest]] ;
+		env.set(fsymb.name,lambda); // NO !!  : use _setq  NYI
+		fsymb.fval = lambda; // top level def : do'nt allow deep define NYI
+		glex_lambda(lambda); 
+		// close lambda if not at top level NYI
+		glex_tail_call(lambda,env);
+		fsymb.macro = fsymb.syntax = false;
+		return fsymb; // symb
+		}
+
+	// (define x <expr>)
+	// assert(isSymbol(item)) 
+	// loading pack NYI , and in defmacro itou
+	
+	if(!isSymbol (item)) return glisp_error(27,item,"define");
+	if(item.readonly) return glisp_error(19,item,"define");
+	
+	// loading package defs
+		if(glisp.pack && packName(item.name) === null)
+			item = new Symbol(glisp.pack + "." + item.name);
+	// rem - what if (set! f 6) ? fval ?
+	value = __eval(rest[0],env);
+	if(typeof value === "function" || isLambda(value)) item.fval = value; // (define f sin)
+	env.set(item.name,value) ; 
+	return item; // symbol
+	}  // define
+	
+
+////////////////
+// set!
+///////////////////
+// change value in variable bounding environment
+// arg is Formal or Symbol
+
+var _symsetq = function(self, env) { // _setq with no check (used in letrec)
+	var argv = self[1];
+	var symb = argv[0];
+	env.set(symb.name,__eval(argv[1][0],env)) ; 
+}
+
+
+var _setq = function (self,env) {  // set!
+	var sidx;
+	var argv = self[1];
+	var symb = argv[0];
+	
+	if(symb instanceof Formal) {
+		if(symb.value !== _undefined) {
+			symb.value = __eval(argv[1][0],env) ;
+			return symb.name;
+			}
+		sidx = symb.index + _blocks[_topblock - symb.block]; // N hours bogue - cf LET NYI
+
+		if(symb.block >= _topblock) return glisp_error(28,symb.block,"block#" + _topblock) ;
+		if(sidx >= _top ) return glisp_error(28,sidx,"stack[" + _top +"]"); 
+		 _stack[sidx] = __eval(argv[1][0],env) ;
+		 return symb.name;
+	} // &_x 
+
+// assert(isSymbol(symb)) NYI
+	var bounding  = env.isBound(symb.name) ;
+	if(!bounding) 
+		return glisp_error(17,symb.name,'_set!'); // null
+	if(symb.readonly) return glisp_error(19,symb,"set!");
+	bounding.set(symb.name,__eval(argv[1][0],env)) ; // car(argv), cadr(argv)
+	return symb.name;
+	} 
+
+///// LAMBDA /////
+// ftp://ftp.cs.utexas.edu/pub/garbage/cs345/schintro-v13/schintro_122.html
+//  (lambda (x) (+ x x))            =>  #[compound-procedure 53]
+//  ((lambda (x) (+ x x)) 4)                =>  8
+//  (named-lambda (f x) (+ x x))    =>  #[compound-procedure 53 f]
+//  ((named-lambda (f x) (+ x x)) 4)        =>  8
+
+var _lambda = function(self,env) {
+
+	var body = self[1][1];
+	_topblock++; // simu lambda-call to get right stack values
+	 __lambda_close(self,0,env);
+	 _topblock--;
+// glisp_trace("CLOSE LAMBDA",self,"_lambda");
+	return self; // easy
+}
+
+var _flambda = function(self,env) {
+	return self; // easy
+}
+
+///////////////
+// BEGIN
+////////////////
+var _begin = function(self, env) {
+	var ret = null;
+	var expr, exprs = self[1];
+	for(expr = exprs ; expr != null ; expr = expr[1]) {
+// glisp_trace("expr",expr[0],"__begin");
+		ret = __eval(expr[0],env);
+		}
+	return ret;
+} // _begin
+
+////////////////
+// (IF <test> a [b])
+// (when cond expr..)
+// (unless cond expr..)
+//////////////
+
+var _if = function(self, env) {
+		var argv = self[1];
+		var comp = __eval(argv[0],env);
+		if(comp === _false) {
+//glisp_trace("","","ELSE");
+				var res = argv[1][1]; // else clause ?
+				if(res === null) return undefined;
+				return __eval(res[0],env) ;
+				}
+//glisp_trace("","","Then");
+	return __eval(argv[1][0],env);
+}
+var _when = function(self, env) {
+		var argv = self[1];
+		var comp = __eval(argv[0],env);
+		if(comp !== _false) 
+				return __begin(argv[1],env) ;
+	return undefined ;
+}
+var _unless = function(self, env) {
+		var argv = self[1];
+		var comp = __eval(argv[0],env);
+		if(comp === _false) 
+				return __begin(argv[1],env) ;
+	return undefined ;
+}
+//////////////////
+// COND (cond clauses ...)
+// clause := (test e1 ..en) | (else e1 ..en) | test => recipient
+// 
+////////////////
+var _cond = function(self,env) {
+	var clause, clauses = self[1];
+	var test,body,res;
+	while(clauses) {
+		clause = clauses[0];
+		test = clause[0];
+		body = clause[1];
+		if(test === _else) return __begin(body,env) ;
+		res = __eval(test,env) ;
+		if(res !== _false) {
+							if(body === null) return res;
+							if(isList(body) && body[0] === _right_arrow) 
+								return __ffuncall([ body[1][0] , [res , null]],env) ;
+							return __begin(body,env) ;
+							}
+		clauses = clauses[1];
+		}
+		return null;
+} // cond
+
+
+///////////////
+// CASE
+// (case <key> <clause 1> <clause 2> ...)
+// clause ::= ((<datum 1> ...) <expression 1> <expression 2> ...)
+////////
+var _case = function(self,env) {
+	var clause, key = self[1][0], clauses = self[1][1] , test;
+	key = __eval(key,env);
+	while(clauses) {
+		clause = clauses[0];
+		test = clause[0];
+		body = clause[1];
+		if(test === _else) return __begin(body,env) ;
+		if(_memv(key,test) !== _false) return __begin(body,env);
+		clauses = clauses[1];
+		}
+		return null;
+} // case
+
+/////////////
+// DO
+//////////
+
+/* (do ((<variable1> <init1> [<step1>])  ...) 
+   (<test> <expression> ...) // to return last
+   <command> ...)
+* http://www.schemers.org/Documents/Standards/R5RS/HTML/r5rs-Z-H-7.html#%%5Fsec%5F4.2.4
+*/
+// (define (loops n) (do ((j 0)(i 0 (+ 1 i))) ((eq? i n)(write "finish")) (set! j (+ i i i))))
+ 
+var _do = function(self,env) {
+	var thedo = self[1];
+	var bindings = thedo[0];
+	thedo = thedo[1];
+	var test = thedo[0][0];
+	var exprs = thedo[0][1];
+	var cmds = thedo[1];
+	var newenv = new GLenv(env,'_do');
+
+//glisp_trace(bindings,"bindings","_do");
+//glisp_trace(test,"tests","_do");
+//glisp_trace(exprs,"exprs","_do");
+//glisp_trace(cmds,"cmds","_do");
+
+	__bind(bindings,env,newenv) ;
+
+//console.log("newenv",newenv.alist);
+	 while (glisp.error === 0) {
+			if(__eval(test,newenv) === _false) {
+			__begin(cmds,newenv);
+			 var steps = bindings;
+			 while(steps != null) {
+				var step = steps[0];
+//				glisp_trace(step,"steps","_do") ;
+				var dovar = __car(step);
+				step = __caddr(step);
+	
+				if(step) newenv.set(dovar.name,__eval(step,newenv));
+				steps = steps[1];
+				}} // eval to false 
+			else return __begin(exprs,newenv) ;
+		} // while
+} // do
+
+
+///////////////////
+// W H I L E
+// (while <expression> body )
+///////////////////
+var _while = function(self,env) {
+	var thewhile = self[1];
+	var test = thewhile[0];
+	var exprs = thewhile[1];
+		 while (glisp.error === 0) {
+			if(__eval(test,env) === _false) return null;
+			__begin(exprs,env) ;
+			}
+} // while
+
+///////////////
+// L E T
+// (let  bindings body)
+// named-let NYI
+///////////////
+
+var _letrec = function(self,env) { 
+	var body = self[1];
+	
+	if(body === null) return glisp_error(11,self,_letrec);
+	var newenv = new GLenv(env,'_letrec');
+	return __begin(body,newenv);
+	}
+
+////////////////
+// CATCH and THROW
+/////////
+var _throw = function(tag , retval) {
+	if(!isSymbol(tag)) return glisp_error(23,tag,_throw);
+	throw  new GLInterrupt(tag,retval);
+}
+
+var _catch = function(self, env) { // special
+	var thecatch = __cdr(self);
+	var tag = __car(thecatch);
+	var body = __cdr(thecatch);
+
+	tag = __eval(tag,env);
+	if(!isSymbol(tag)) return glisp_error(23,tag,_catch);
+	try {
+		return __begin(body,env);
+	}
+	catch(err) {
+		if(err instanceof GLInterrupt && err.tag === tag) // symbol OK
+			return err.retval ;
+		else throw err ;
+	}
+} // _catch
+
+/*----------------
+Misc primitives
+--------------------*/
+var _id = function(x) {return x;}
+var _iota = function (n) { // --> list [1....n]
+	var i;
+	if(! isJSInteger(n) || n <= 0) return glisp_error(48,n,"iota");
+	n = Math.min(n,10000);
+	var lst = [n-1,null];
+	for(i=n-2; i>=0;i--) lst = [i , lst] ;
+	return lst;
+	}
+	
+/*-----------------------
+(compose_apply op-list value)
+(compose f g h ...) -> lambda(x) (compose-apply (list op ..) x)
+----------------------*/
+var _apply_compose = function (ops , x)  {
+	if(! isListNotNull(ops)) return glisp_error(20,ops,"compose") ;
+	var opcall = [null , [null , null]] ;
+	var env = glisp.user; // NYI should get environment from lambda  !!!
+		while(ops) {
+			opcall[0] = ops[0];
+			opcall[1][0] = x ;
+			x = __ffuncall(opcall,env);
+			ops = ops[1] ;
+		}
+		return x;
+}
+
+var _compose = function (self, env) { 
+	var ops = _reverse(self[1]);
+	var x = _gensym();
+	var call = [_apply_compose , [ [_list,ops] , [ x ,null]]];
+	var lambda = [_lambda ,  [ [x,null], [ call, null]]];
+	glex_lambda(lambda);
+	return lambda;
+	}
+	
+/*-----------------------
+(iterate-apply (list f n) value)
+(iterate f n ) -> lambda(x) (iterate-apply (list f n) x)
+EX :define (w f n x) ((iterate f n) x))
+(w cos 10 4)
+(define (g x) (write x) (cos x))
+(w g 10 0)
+EX : (define (fixed f) (lambda (x) (let ((r (f x))) (if( < (abs (- r x)) epsilon) (throw 'fixed-point x) r))))
+EX (w (fixed g) 10 0.0) KO !!!!
+----------------------*/
+var _apply_iterate = function (op , x)  {
+	if(! isListNotNull(op)) return glisp_error(20,ops,"iterate") ;
+	var n = op[1][0];
+	var opcall = [op[0] , [null , null]] ;
+	
+	var env = glisp.user; // NYI should get environment from lambda  !!!
+		while(n--) {
+			opcall[1][0] = x ;
+			x = __ffuncall(opcall,env);
+		}
+	return x;
+}
+var _iterate = function (f , n) { 
+	var x = _gensym();
+	if(!isJSInteger(n) || n < 0) return glisp_error(22,n,"(iterate f n)");
+	var call = [_apply_iterate , [[_list , [f , [n , null]]] , [ x ,null]]];
+	var lambda = [_lambda ,  [[x,null], [ call, null]]];
+	glex_lambda(lambda);
+	return lambda;
+	}
+	
+	
+	
+////////////
+// DELAY 
+//////////////
+function Promise ( promise, env) {
+	this.promise = promise;
+	this.env = env;
+	this.value = undefined;
+	
+	this.toString = function () {
+			if(this.value === undefined) 
+			return  "#[promise: " + glisp_tostring(this.promise) + "]";
+			else
+			return  "#[promise! "  + glisp_tostring(this.value) + "]";
+	}
+}
+
+var _promisep = function( obj) {
+	return obj instanceof Promise ? _true : _false ;
+	} 
+	
+var _delay = function (self, env) {
+	var promise = __cadr(self) ;
+	return new Promise(promise, env);
+} // delay
+
+var _force = function (aPromise) {
+	if( !(aPromise instanceof Promise)) return promise; // nopish
+	if(aPromise.value === undefined)   
+			aPromise.value  =  __eval(aPromise.promise,aPromise.env) ;
+	return aPromise.value ;
+
+} // force
+
+////////////////
+// BOXES
+///////////////
+
+function Box(value) {
+	this.value = value ;
+	this.toString = function() {
+		return "&#[box-> " + glisp_tostring(this.value) + "]";
+	}
+}
+
+var _boxp = function (obj) {
+	return obj instanceof Box  ? _true : _false ;
+}
+
+var _box = function(value) { 
+	return new Box (value); 
+}
+
+var _unbox = function(box) { // check type NYI
+	return box.value;
+}
+
+var _set_box = function (box,value) {
+	box.value = value;
+	return box; // ? check
+}
+
+////////////
+// timing
+/////////////
+var _time = function(self, env) { // (time form)
+	var form = self[1][0];
+	var t0 = Date.now() ; // milli sec
+	var ret = __eval(form,env);
+	var dt = Date.now() - t0 ;
+	return [_values , [ret , [ dt , null]]] ;
+	}
+
+
+
+	

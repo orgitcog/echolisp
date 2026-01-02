@@ -1,0 +1,18 @@
+;;http://rosettacode.org/wiki/Stair-climbing_puzzle#PARI.2FGP
+
+(define SUCCESS 3/4)
+(define STEPS 0)
+
+(define (step) (set! STEPS (1+ STEPS))  (< (random) SUCCESS))
+(define (step-up) (while (not (step)) (step-up)))
+
+(define (climb stairs)
+	(when (> stairs 0)  (step-up) (climb (1- stairs))))
+	
+(define (task  (stairs 1000))
+	(for ((success (in-range 1 0 -5/100)))
+	(set! SUCCESS success)
+	(set! STEPS 0)
+	(climb stairs)
+	(writeln 'stairs stairs 'probability success 'steps STEPS)))
+	

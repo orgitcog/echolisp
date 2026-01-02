@@ -1,0 +1,39 @@
+(define-class Human () (name))
+(define-class Male (Human))
+(define-class Female (Human) )
+
+(define-method multiply (Human Human)(lambda (a b) '∅))
+(define-method multiply (Male Female)(lambda (a b) (Male (string-append a.name " Jr."))))
+(define-method multiply (Female Male)(lambda (a b) (multiply b a)))
+
+(define simon (make-instance Male :name 'Simon))
+(define albert (make-instance Male :name 'Albert))
+(define antoinette (Female 'Antoinette))
+
+(multiply simon antoinette)
+(multiply simon simon)
+
+(define-method multiply (Human Male) (lambda (a b) 'human-male))
+(define-method multiply (Male Human) (lambda (a b) 'male-human))
+(define-method multiply (Human Female) (lambda (a b) 'human-female))
+😡 error: generic:multiply : no method found : (simon simon)
+
+(Simon Jr.)
+(multiply antoinette simon)
+(Simon Jr.)
+(multiply antoinette antoinette)
+😖️ error: generic:multiply : no method found : (antoinette antoinette)
+
+#<Method multiply:Human:Male >
+
+#<Method multiply:Male:Human >
+(multiply simon simon)
+222
+
+#<Method multiply:Human:Female >
+(multiply antoinette antoinette )
+😡 error: generic:multiply : no method found : (antoinette antoinette)
+(define-method name (Human) (lambda(h) h.name))
+#<Method name:Human >
+(name simon)
+Simon

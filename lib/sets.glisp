@@ -1,0 +1,27 @@
+#|
+A library for sets
+A and B are sets : (define A (make-set somelist))
+L is a list or a set
+|#
+
+;; cons-tructor
+(define (set-cons  a L) (make-set (cons a L)))
+
+;; Card(L) : number of elements
+;; (Card ' (b a a b)) -> 2
+(define-syntax-rule (Card L) (length (make-set L))) 
+
+;; All pairs (a . b)
+(define (set-product A B)
+	(make-set
+	(for*/list ((a A)(b B)) (cons a b))))
+
+;; set of all subsets : 2^Card(A)
+(define (power-set A) 
+	(cond ((null? A) 
+		(make-set (list null)))
+		(else (let [(ps (power-set (cdr A)))]
+		(make-set
+		 (append ps (map set-cons (circular-list (car A)) ps)))))))
+		 
+(display "usage : (Card list) (set-product setA setB) (power-set setA)"  "color:green")

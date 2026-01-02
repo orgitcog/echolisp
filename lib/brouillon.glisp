@@ -1,0 +1,120 @@
+#|
+directed acyclic graph topological sort
+http://rosettacode.org/wiki/Topological_sort
+|#
+
+;; task data
+
+(define dependencies
+'((des_system_lib   std synopsys std_cell_lib des_system_lib dw02 dw01 ramlib ieee)
+(dw01             ieee dw01 dware gtech) ;; bad graph added dw04
+(dw02             ieee dw02 dware )
+(dw03             std synopsys dware dw03 dw02 dw01 ieee gtech)
+(dw04             dw04 ieee dw01 dware gtech)
+(dw05             dw05 ieee dware)
+(dw06             dw06 ieee dware)
+(dw07             ieee dware)
+(dware            ieee dware) 
+(gtech            ieee gtech)
+(ramlib           std ieee ) 
+(std_cell_lib     ieee std_cell_lib)
+(synopsys         )))
+
+
+;; build dependency graph
+
+;;  a depends on b
+;;  add arc (arrow) a --> b
+(define (a->b  g a b) 
+		(unless (equal? a b)
+		(graph-make-arc g (graph-make-vertex g a) (graph-make-vertex g b))))
+
+;(define (add-dependencies g dep-list)
+;		(for ((dep dep-list)) (add-a-dependencies g (first dep) (rest dep))))
+(define (add-dependencies g dep-list)
+(for* ((dep dep-list)  (b (rest dep))) (a->b  g b (first dep))))
+(define g (make-graph "VHDL"))
+(add-dependencies g dependencies)
+(graph-print g)
+
+;; topological sort
+;; uses low-level primitives of graph.lib
+;; Complexity O (# of vertices + # of edges)
+(define (t-sort g) 
+	(stack 'Z) ; vertices of d°(0)
+	(stack 'S) ; ordered result
+;; mark all vertices with their in-degree = # of incoming arcs
+;; push all vertices u such as d°(u) = 0
+	(for ((u g)) (mark u (graph-vertex-indegree g u))
+	             (when (zero? (mark? u)) (push 'Z u)))
+	            
+;pop a d°(0) vertex u - add it to result
+;decrement in-degree of all v vertices u->v
+; if d°(v) = 0, push it
+
+(while (not (stack-empty? 'Z))
+			(let  (( u (pop 'Z)))
+			(push 'S u)
+			(for ((v (graph-vertex-out g u)))
+				 (mark v (1- (mark? v)))
+				 (when (zero? (mark? v)) (push 'Z v)))))
+				 
+;; finish
+		(writeln 't-sort (map vertex-label (stack->list 'S)))
+		
+;; check no one remaining
+		(for ((u g))
+		(unless (zero? (mark? u))
+				(error " ♻️ t-sort:cyclic" (map vertex-label (graph-cycle g)))))
+)
+			
+			
+;{{out}}	 
+(define g (make-graph "VHDL"))
+(add-dependencies g dependencies)
+(graph-print g)
+(t-sort g)
+
+;;(graph-dag-sort g)		 
+		    
+
+
+
+#|
+graph utilities
+graph.util.glisp
+|#
+(require 'graph)
+
+;; input : list of edges (( a . b) ( a . c) ....)
+(define (alist->graph g alist) 
+	(for (( edge alist)) 
+		(graph-make-edge g 
+			(graph-make-vertex g (first edge))
+			(graph-make-vertex g (rest edge)))))
+		
+;; input : list of arcs (( a . b) ( a . c) ....)
+(define (alist->digraph g alist)
+	(for (( arc alist)) 
+		(graph-make-arc g 
+			(graph-make-vertex g (first arc))
+			(graph-make-vertex g (rest arc)))))
+
+;; exemples
+;; example graph
+(define tgv '((a . b) (b . c) (b . d) (d . f) 
+	(f . e) (e . a) (f . g) (g . i)  (i . h) (h . f)))
+(define g (make-graph "G"))
+(alist->graph g tgv)
+
+(define a (graph-vertex-ref g 'a))
+(define b (graph-vertex-ref g 'b))
+(define i (graph-vertex-ref g 'i))
+
+
+
+
+		
+
+ 		
+

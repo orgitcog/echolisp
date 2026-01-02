@@ -1,0 +1,21 @@
+;;(require 'list)
+(define compare 0)
+
+(define (quicksort L compare-predicate: proc aux:  (part null))
+(if  (<= (length L) 1) L
+     (begin
+     ;; pivot = first element of list
+     (set! compare (+ compare (length (rest L))))
+     (set! part (list-partition (rest L) proc (first L)))
+     (append (quicksort (first part) proc )
+            (list (first L)) 
+            (quicksort (second part) proc)))))
+		
+;; random list of numbers in [0 .. n]
+;; count number of calls
+(define (qtest (n 10000))
+	(set! compare 0)
+	(quicksort (shuffle (iota n)) >)
+	(writeln 'n n 'compare# compare ))
+	
+	

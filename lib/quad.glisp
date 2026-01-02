@@ -1,0 +1,25 @@
+#|
+quadratic polynomials
+ax^2 + bx + c
+|#
+
+(require 'plot)
+
+
+(define (quad.roots a b c) ;; returns 2 roots 
+(when (= a 0) (error quad.errmess 0)) 
+	(let* [(a (* 2 a)) 
+	(delta (/ (sqrt (- (* b b) (* 2 a c))) a)) 
+	(b (- (/ b a)))] 
+			(list (+ b delta ) (- b delta))))
+
+(define (quad.value x a b c) 
+	(+ (* a x x) (* b x) c))
+
+(define (quad.plot a b c xmin) ;; plot ax^2 + bx + c 
+	(let ((f (lambda(x) (+ ( * a x x) ( * b x) c ))))
+		 (plot f xmin )
+		 (plot-grid 1 1) 
+		 (plot-axis 0 0 'red)))
+		 
+(define quad.errmess "not quadratic (a = 0)")

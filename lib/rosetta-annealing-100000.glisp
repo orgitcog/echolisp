@@ -1,0 +1,99 @@
+#|-------------------------------
+10000 cities
+--------------------------------|#
+
+(require 'math)
+
+;; di in -100,100 dj in -100,100
+(define _i (build-vector 10000 (lambda(i) (% i 100))))
+(define _j (build-vector 10000 (lambda(i) (quotient i 100))))
+
+
+(define-syntax-rule  (dist ca cb)
+		(distance [_i ca] [_j ca] [_i cb] [_j cb]))
+		
+;; E(s) = length(path)
+(define (Es path)
+	(define lpath (vector->list path))
+	(for/sum ((ci lpath) (cj (rest lpath))) (dist ci cj)))
+	
+;; temperature() function
+(define (T k kmax kT)
+		(* kT (- 1  (// k kmax))))
+		
+;; ∆E = Es_new - Es_old >  0
+;; probability to move if ∆E > 0,  → 0 when T → 0 (frozen state)
+(define (P ∆E k kmax kT)
+		(exp (// (- ∆E ) (T k kmax kT))))
+		
+;;  ∆E from path ( .. a u b .. c v d ..) to (.. a v b ... c u d ..)
+;;  ∆E before swapping (u,v)
+;;  Quicker than Es(s_next) - Es(s)
+
+(define (dE s u v)
+	(define su [s u])
+	(define sv [s v])
+;;old
+		(define a (dist [s (1- u)] su))
+		(define b (dist [s (1+ u)] su))
+		(define c (dist [s (1- v)] sv))
+		(define d  (dist [s (1+ v)] sv))
+;; new
+		(define na (dist [s (1- u)] sv))
+		(define nb (dist [s (1+ u)] sv))
+		(define nc (dist [s (1- v)] su))
+		(define nd (dist [s (1+ v)] su))
+				
+		(cond 
+		((= v (1+ u)) (- (+ na nd) (+ a d)))
+		((= u (1+ v)) (- (+ nc nb) (+ c b)))
+		(else (- (+ na nb nc nd) (+ a b c d)))))
+		
+	;; all 8 neighbours
+(define dirs #(1 -1 10 -10 9 11 -11 -9))
+
+(define (sa  kmax (kT 10) (s0 null))
+	(define s (list->vector (cons 0 (append (shuffle (range 1 10000)) 0))))
+	(define cx (make-vector 10000))
+	(for ((i 10000)) (vector-set! cx [s i] i)) ;; reverted index
+;;(writeln 's0 (take s 100))
+;;(writeln 'cx (take cx 100))
+	
+	(printf "E(s0) %d" (Es s))
+	(define Emin (Es s)) ;; E0
+	
+	(for ((k kmax))
+	(when (zero? (% k (/ kmax 10)))
+		(printf "k: %10d T: %8.4d Es: %8.4d" k  (T k kmax kT) (Es s))
+		)
+		
+		(define u (1+ (random 9999))) ;; city index 1 99
+		(define v (1+ (random 9999))) ;; city index 1 99
+		#:continue (= u v)
+		
+#|
+		(define cv (+ [s u] [dirs (random 8)])) ;; city number
+		#:continue (or (> cv 9999) (<= cv 0))
+		#:continue (> (dist [s u] cv) 5) ;; check true neighbour (eg 0 99)
+		(define v [cx cv]) ;; city index in path
+|#
+		
+		(define ∆e (dE s u v))
+		(when (or 
+			(< ∆e 0)  ;; always move if negative
+			(>= (P ∆e k kmax kT) (random)))
+				(vector-swap! s u v)
+				(vector-set! cx [s u] u)
+				(vector-set! cx [s v] v)
+				
+				(+= Emin ∆e))
+			
+		;; (assert  (= (round Emin) (round (Es s))))
+		) ;; for
+		
+		(printf "k: %10d T: %8.4d Es: %8.4d" kmax  (T (1- kmax) kmax kT) (Es s))
+		;; (s-plot s 0)
+		(writeln 'E_final Emin)
+		(writeln 'Path (take s 100))
+		(writeln 'cx (take cx 100))
+		)

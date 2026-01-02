@@ -1,0 +1,306 @@
+;; http://rosettacode.org/wiki/Last_letter-first_letter
+
+(define pokemons '( audino bagon baltoy banette bidoof braviary bronzor carracosta charmeleon
+cresselia croagunk darmanitan deino emboar emolga exeggcute gabite
+girafarig gulpin haxorus heatmor heatran ivysaur jellicent jumpluff kangaskhan
+kricketune landorus ledyba loudred lumineon lunatone machamp magnezone mamoswine
+nosepass petilil pidgeotto pikachu pinsir poliwrath poochyena porygon2
+porygonz registeel relicanth remoraid rufflet sableye scolipede scrafty seaking
+sealeo silcoon simisear snivy snorlax spoink starly tirtouga trapinch treecko
+tyrogue vigoroth vulpix wailord wartortle whismur wingull yamask)) 
+
+(define names-646
+  `(Bulbasaur Ivysaur Venusaur Charmander Charmeleon Charizard Squirtle Wartortle Blastoise Caterpie Metapod Butterfree
+    Weedle Kakuna Beedrill Pidgey Pidgeotto Pidgeot Rattata Raticate Spearow Fearow Ekans Arbok Pikachu Raichu Sandshrew
+    Sandslash Nido-male-ran Nidorina Nidoqueen Nido-female-oran Nidorino Nidoking Clefairy Clefable Vulpix Ninetales Jigglypuff
+    Wigglytuff Zubat Golbat Oddish Gloom Vileplume Paras Parasect Venonat Venomoth Diglett Dugtrio Meowth Persian
+    Psyduck Golduck Mankey Primeape Growlithe Arcanine Poliwag Poliwhirl Poliwrath Abra Kadabra Alakazam Machop Machoke
+    Machamp Bellsprout Weepinbell Victreebel Tentacool Tentacruel Geodude Graveler Golem Ponyta Rapidash Slowpoke
+    Slowbro Magnemite Magneton Farfetched  Doduo Dodrio Seel Dewgong Grimer Muk Shellder Cloyster Gastly Haunter Gengar
+    Onix Drowzee Hypno Krabby Kingler Voltorb Electrode Exeggcute Exeggutor Cubone Marowak Hitmonlee Hitmonchan
+    Lickitung Koffing Weezing Rhyhorn Rhydon Chansey Tangela Kangaskhan Horsea Seadra Goldeen Seaking Staryu Starmie
+    Mr-Mime Scyther Jynx Electabuzz Magmar Pinsir Tauros Magikarp Gyarados Lapras Ditto Eevee Vaporeon Jolteon
+    Flareon Porygon Omanyte Omastar Kabuto Kabutops Aerodactyl Snorlax Articuno Zapdos Moltres Dratini Dragonair
+    Dragonite Mewtwo Mew Chikorita Bayleef Meganium Cyndaquil Quilava Typhlosion Totodile Croconaw Feraligatr Sentret
+    Furret Hoothoot Noctowl Ledyba Ledian Spinarak Ariados Crobat Chinchou Lanturn Pichu Cleffa Igglybuff Togepi Togetic
+    Natu Xatu Mareep Flaaffy Ampharos Bellossom Marill Azumarill Sudowoodo Politoed Hoppip Skiploom Jumpluff Aipom
+    Sunkern Sunflora Yanma Wooper Quagsire Espeon Umbreon Murkrow Slowking Misdreavus Unown Wobbuffet Girafarig Pineco
+    Forretress Dunsparce Gligar Steelix Snubbull Granbull Qwilfish Scizor Shuckle Heracross Sneasel Teddiursa Ursaring
+    Slugma Magcargo Swinub Piloswine Corsola Remoraid Octillery Delibird Mantine Skarmory Houndour Houndoom Kingdra
+    Phanpy Donphan Porygon-two Stantler Smeargle Tyrogue Hitmontop Smoochum Elekid Magby Miltank Blissey Raikou Entei
+    Suicune Larvitar Pupitar Tyranitar Lugia Ho-Oh Celebi Treecko Grovyle Sceptile Torchic Combusken Blaziken Mudkip
+    Marshtomp Swampert Poochyena Mightyena Zigzagoon Linoone Wurmple Silcoon Beautifly Cascoon Dustox Lotad Lombre
+    Ludicolo Seedot Nuzleaf Shiftry Taillow Swellow Wingull Pelipper Ralts Kirlia Gardevoir Surskit Masquerain Shroomish
+    Breloom Slakoth Vigoroth Slaking Nincada Ninjask Shedinja Whismur Loudred Exploud Makuhita Hariyama Azurill Nosepass
+    Skitty Delcatty Sableye Mawile Aron Lairon Aggron Meditite Medicham Electrike Manectric Plusle Minun Volbeat Illumise
+    Roselia Gulpin Swalot Carvanha Sharpedo Wailmer Wailord Numel Camerupt Torkoal Spoink Grumpig Spinda Trapinch Vibrava
+    Flygon Cacnea Cacturne Swablu Altaria Zangoose Seviper Lunatone Solrock Barboach Whiscash Corphish Crawdaunt Baltoy
+    Claydol Lileep Cradily Anorith Armaldo Feebas Milotic Castform Kecleon Shuppet Banette Duskull Dusclops Tropius
+    Chimecho Absol Wynaut Snorunt Glalie Spheal Sealeo Walrein Clamperl Huntail Gorebyss Relicanth Luvdisc Bagon Shelgon
+    Salamence Beldum Metang Metagross Regirock Regice Registeel Latias Latios Kyogre Groudon Rayquaza Jirachi Deoxys
+    Turtwig Grotle Torterra Chimchar Monferno Infernape Piplup Prinplup Empoleon Starly Staravia Staraptor Bidoof Bibarel
+    Kricketot Kricketune Shinx Luxio Luxray Budew Roserade Cranidos Rampardos Shieldon Bastiodon Burmy Wormadam Mothim
+    Combee Vespiquen Pachirisu Buizel Floatzel Cherubi Cherrim Shellos Gastrodon Ambipom Drifloon Drifblim Buneary
+    Lopunny Mismagius Honchkrow Glameow Purugly Chingling Stunky Skuntank Bronzor Bronzong Bonsly Mime-Junior Happiny
+    Chatot Spiritomb Gible Gabite Garchomp Munchlax Riolu Lucario Hippopotas Hippowdon Skorupi Drapion Croagunk Toxicroak
+    Carnivine Finneon Lumineon Mantyke Snover Abomasnow Weavile Magnezone Lickilicky Rhyperior Tangrowth Electivire
+    Magmortar Togekiss Yanmega Leafeon Glaceon Gliscor Mamoswine Porygon-z Gallade Probopass Dusknoir Froslass Rotom Uxie
+    Mesprit Azelf Dialga Palkia Heatran Regigigas Giratina Cresselia Phione Manaphy Darkrai Shaymin Arceus Victini Snivy
+    Servine Serperior Tepig Pignite Emboar Oshawott Dewott Samurott Patrat Watchog Lillipup Herdier Stoutland Purrloin
+    Liepard Pansage Simisage Pansear Simisear Panpour Simipour Munna Musharna Pidove Tranquill Unfezant Blitzle Zebstrika
+    Roggenrola Boldore Gigalith Woobat Swoobat Drilbur Excadrill Audino Timburr Gurdurr Conkeldurr Tympole Palpitoad
+    Seismitoad Throh Sawk Sewaddle Swadloon Leavanny Venipede Whirlipede Scolipede Cottonee Whimsicott Petilil Lilligant
+    Basculin Sandile Krokorok Krookodile Darumaka Darmanitan Maractus Dwebble Crustle Scraggy Scrafty Sigilyph Yamask
+    Cofagrigus Tirtouga Carracosta Archen Archeops Trubbish Garbodor Zorua Zoroark Minccino Cinccino Gothita Gothorita
+    Gothitelle Solosis Duosion Reuniclus Ducklett Swanna Vanillite Vanillish Vanilluxe Deerling Sawsbuck Emolga
+    Karrablast Escavalier Foongus Amoonguss Frillish Jellicent Alomomola Joltik Galvantula Ferroseed Ferrothorn Klink
+    Klang Klinklang Tynamo Eelektrik Eelektross Elgyem Beheeyem Litwick Lampent Chandelure Axew Fraxure Haxorus Cubchoo
+    Beartic Cryogonal Shelmet Accelgor Stunfisk Mienfoo Mienshao Druddigon Golett Golurk Pawniard Bisharp Bouffalant
+    Rufflet Braviary Vullaby Mandibuzz Heatmor Durant Deino Zweilous Hydreigon Larvesta Volcarona Cobalion Terrakion
+    Virizion Tornadus Thundurus Reshiram Zekrom Landorus Kyurem))
+
+(define G null)
+(define D null)
+(define *best* null)
+(define *best-ab* null)
+(define *lgmax* 0)
+(define *path* null)
+(define ct 0)
+
+(define (out-sort u v) (> (graph-vertex-outdegree G u) (graph-vertex-outdegree G v)))
+(define (path-sort a b) (> (car a) (car b)))
+
+
+(define (do-pokemons  names) 
+	(set! G (make-graph 'Pokemons))
+	(for (( p names)) (graph-make-vertex G p))
+	(for* ((u G) (v G))
+		(unless (eq? u v)
+		(when (eq? (string-last (vertex-label u)) (string-downcase (string-first (vertex-label v))))
+  		(graph-make-arc G u v))))
+  	(graph-out-sort G out-sort))
+  	
+(define (do-pokemons-d  names) 
+	(set! D (make-graph 'Pokemons))
+	(for (( p names)) (graph-make-vertex D p))
+	(for* ((u D) (v D))
+		(unless (eq? u v)
+		(when (eq? (string-last (vertex-label v)) (string-downcase (string-first (vertex-label u))))
+  		(graph-make-arc D u v))))
+  	(graph-out-sort D out-sort))
+
+
+;;=========================================
+;; find-path from 'a' to 'b'
+;; 
+;; 
+;;=================================
+(define (best-path-ab g  u  b max-width depth width v out ) 
+(set! ct (1+ ct))
+(unless (> ct 160000)
+		(if  (eq? (mark? u) b)
+		(begin
+		(mark u 'X)
+				(when (> depth *lgmax*)
+				(set! *lgmax* depth) 
+				(push 'path (vertex-label u))
+				(set! *best-ab* (stack->list 'path))
+				(pop 'path)
+				))
+				
+		;; else
+		(begin 
+		(mark u 'X)
+		(push 'path (vertex-label u))
+
+		(while #t
+			#:break (or (zero? width) (null? out))
+			(set! v (first out))
+			(set! out (rest out))
+			 #:continue (eq? (mark? v) 'X)
+			(best-path-ab g v  b max-width (1+ depth) max-width 0  (graph-vertex-out g v)  )
+			(set! width (1- width)))
+			
+		(unmark u)
+		(pop 'path)))))
+		
+;; input *best* , u , b , lgmin
+;; output *best-ab* , no common with *best*
+
+(define (find-best-ab g  u b  (lgmin  4)  (width 4) (u null) (umark 0))
+	(raz g)
+	(mark-path g *best*)
+	(mark-all-b-1 g b) 
+	(set! *best-ab* null)
+	(set! *lgmax* lgmin)
+	(stack 'path)
+	(set! ct 0)
+	;;(set! u  (graph-vertex-ref g ulabel))  ;; test : input ulabel
+(set! umark (mark? u))
+	(best-path-ab g u b  width 0 width 0 (graph-vertex-out g u)) 
+(when umark (mark u 'X))
+	(length *best-ab*))
+	
+(define (find-loops g names (lgmin 4) (width 4) (pairs null))
+	(for ((name names))
+		(set! a (string-downcase (string-first name)))
+		(set! b (string-last name))
+		#:continue (member (list a b) pairs)
+		(set! pairs (cons (list a b) pairs))
+		
+
+
+;; in b = "letter"
+;; out : count
+(define (mark-all-b-1 g b) 
+		(for/sum ((u g))
+		#:continue (mark? u)
+		(if (eq? (string-last (vertex-label u)) b)
+			(begin (mark u b) 1)
+			0)))
+			
+(define (mark-all-b g names  (count 0))
+	 (for ((name names))
+	 (set! count (mark-all-b-1 g (string-last name)))
+	 (unless (zero? count) (write (list (string-last name) count)))))
+	 	
+			
+			
+			 
+;;===============================================
+
+(define (path-length u max-width  depth width) 
+		(mark u 'X)
+		(push 'path (vertex-label u))
+		(when (> depth *lgmax*) (set! *lgmax* depth))
+		(for ((v (graph-vertex-out G u))) #:continue (mark? v) #:break (zero? width)
+			 (set! width (1- width)) 
+			 (path-length v max-width (1+ depth) max-width))
+		(unmark u)
+		(pop 'path))
+		
+;; input : G and marked nodes
+;; output list of (score node)
+(define (find-candidates (width 1))
+	(stack 'candidates)
+	(for ((u G))  #:continue (mark? u) 
+				(set! *lgmax*  0) 
+				(path-length u width 0 width) 
+				(push 'candidates (list  *lgmax* (vertex-label u))))
+	(list-sort path-sort (stack->list 'candidates)))
+		
+;;=================================
+
+(define (re-order-out g ufrom u)
+	(let ((out (graph-vertex-out g ufrom)))
+;; (unless (eq? u (first out)) (writeln 'swap (vertex-label u) (vertex-label (first out))))
+		 (list-swap! out u (first out))))
+		
+
+(define DMAX 1000)
+(define (best-path g  u max-width depth width v out ufrom) 
+(set! ct (1+ ct))
+(unless (or (> ct 160000) (> *lgmax* DMAX))
+		(mark u 'X)
+		(push 'path (vertex-label u))
+		(when (> depth *lgmax*) 
+				(set! *lgmax* depth) 
+				(set! *best* (stack->list 'path))
+				(when ufrom (re-order-out g ufrom u)))
+		
+		(while #t
+			#:break (or (zero? width) (null? out))
+			(set! v (first out))
+			(set! out (rest out))
+			 #:continue (mark? v)
+			(best-path g v  max-width (1+ depth) max-width 0  (graph-vertex-out g v) u )
+			(set! width (1- width)))
+			
+		(unmark u)
+		(pop 'path)))
+		
+;; input : G and marked nodes
+;; output : best path from ulabel and more marked nodes
+
+(define (find-best g  ulabel (width 4) (u null) (umark 0))
+	(set! *best* null)
+	(set! *lgmax* 0)
+	(stack 'path)
+	(set! ct 0)
+	(set! u  (graph-vertex-ref g ulabel) )
+(set! umark (mark? u))
+	(best-path g u width 0 width 0 (graph-vertex-out g u) #f ) 
+(when umark (mark u 'X))
+	(length *best*))
+	
+	
+;; ================================
+;; BATCH
+;; ================================
+
+(define N -1)
+(define S1 0)
+(define S2 0)
+(define S 0)
+(define (fbatch t)
+	(set! N (1+ N))
+	(let ((label (list-ref names-646 N)))
+	(when (< N 646)
+		(set! S1 (find-best G label 12)) ;; 8 STD
+		(mark-path D *best*)
+		(set! S2 (find-best D  label 16))
+		(set! S (1- (+ S1 S2)))
+		(writeln N label S S1 S2)
+		(when (> S 318) (push 'BESTBEST (list N label S S1 S2)))
+		(raz D))))
+		
+(define (fbatch-p t)
+	(set! N (1+ N))
+	(when (< N 70)
+		(set! S (find-best G (list-ref pokemons N) 10))
+		(mark-path D *best*)
+		(set! S (+ S (find-best D  (list-ref pokemons N) 10)))
+		(writeln N (list-ref pokemons N) S)
+		(when (> S 22) (push 'BESTBEST (list N S)))
+		(raz D)))
+		
+(define (rbatch  N d)
+	(let ((label (list-ref names-646 N)))
+		(set! DMAX d)
+		(set! S1 (find-best G label 12)) ;; 8 STD
+		(mark-path D *best*)
+		(set! DMAX 1000)
+		(set! S2 (find-best D  label 12))
+		(set! S (1- (+ S1 S2)))
+		(writeln N label S S1 S2)
+		(when (> S 318) (push 'BESTBEST (list label S S1 S2)))
+		(raz D)))
+;; =================================
+;; (192 321) depth 10 N= 258 Yanma
+;;=======================================
+#|
+ ((Rattata 319 307 13) (Nidorina 319 305 15) (Nidoking 320 307 14) (Abra 319 305 15) (Yanma 319 307 13) (Hitmontop 320 309 12) (Raikou 320 308 13) (Linoone 319 309 11) (Lunatone 319 305 15) (Whiscash 321 308 14) (Roggenrola 319 307 13) (Woobat 319 309 11))
+|#
+ 
+ 
+ 
+
+(define (raz g ) (for ((u g)) (unmark u)))
+
+(define (mark-path g path)
+	(for ((u path)) ;; (write u) 
+		(mark (graph-vertex-ref g u) 'X)))
+	
+	
+(define marks 0)
+(define nomarks 0)
+
+(define (stats g)
+	(set! marks 0)
+	(set! nomarks 0)
+	 (for ((u g)) 
+	 		;; (when (mark? u) (write (vertex-label u)))
+	 		 (if (mark? u) (set! marks (1+ marks)) (set! nomarks (1+ nomarks))))
+	 (writeln 'marks marks 'nomarks nomarks (+ marks nomarks)))
+	
+

@@ -1,0 +1,42 @@
+#|
+infix EchoLisp
+|#
+
+(require 'infix)
+(reader-infix null) ; // clear all
+
+(define-syntax-rule (** a b) (expt a b))
+(define-syntax-rule (:= a b)  (setv! a b))
+(define-syntax-rule (|| a b) (or a b))
+(define-syntax-rule (&& a b) (and a b))
+
+
+
+;; highest priority first
+
+(reader-infix '**)
+(reader-infix '/)
+(reader-infix '//)
+(reader-infix '%)
+(reader-infix '*)
+(reader-infix '-)
+(reader-infix '+)
+
+
+(reader-infix '&&)
+(reader-infix '||)
+
+(reader-infix '=)
+(reader-infix '>)
+(reader-infix '>=)
+(reader-infix '<)
+(reader-infix '<=)
+
+(reader-infix ':=)
+
+
+(display (infix-macros) "color:green");
+
+
+
+

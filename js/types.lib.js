@@ -1,0 +1,685 @@
+/**
+ * EchoLisp
+ * @file types.lib
+ * @copyright Jacques Tramu 2016
+**/
+function __nconc_3 (list , toconc) {
+	var next = list;
+	while(next) {
+		if(next[1] === null) {next[1] = toconc ; return list ;}
+		next = next[1] ;
+	}}
+
+ /*-------------------
+  type-expr := Type | predicat | #predicat | proc | (type-expr* [...]) | #( type-expr* ...)
+  
+ **(type-def proc  type-expr -> type-expr -> proc-type-expr)
+ **(type name type-expr [-> ...]) -> Type ;; binds symbol to Type
+  (type-check expr Type)
+** = special
+ -------------------------------------------- */
+var _TYPES = null; // list of known types
+var _OBJECT = null; // the mother of all types
+
+function Type (name, supertype, t_expr) {
+ 	var symb = new Symbol(name); // constant if native
+ 	this.name = name ;
+ 	this.msuper = __find_Type(supertype,"make-type"); // null or a Type object
+ 	this.supercount = this.msuper ? 2 * this.msuper.supercount : 1 ;
+ 	this.t_expr = t_expr ;
+ 	this.meta = null ; // comes from struct
+ }
+ 
+// must exits
+// return a type object or null if obj = null
+function __find_Type (obj,sender,noerror) { 
+sender = sender || "get-type" ;
+	if (obj === null) return null;
+ 	if (obj instanceof Type) return obj;
+ 	obj = nameToString(obj,sender);
+ 	
+  	var types = _TYPES ;
+ 		while(types) { // no dups
+ 			if(types[0].name === obj) return types[0] ;
+ 			types = types[1];
+ 			}
+ // accept 'number'	
+ 		obj = obj.substring(0,1).toUpperCase() + obj.substring(1).toLowerCase();
+ 	  	types = _TYPES ;
+ 		while(types) { // no dups
+ 			if(types[0].name === obj) return types[0] ;
+ 			types = types[1];
+ 			}
+ 				
+ 	if(noerror) return null ;
+ 	glisp_error(146,obj,sender);
+ }
+ 
+// internal , natives => constant
+// gen sympob Type:name
+
+function define_type(name, supertype, expr,system) { 
+ 	var type = new Type (name,supertype,expr);
+ 	var symb  ;
+ 	if(system) {
+ 		symb = new Symbol(name);
+ 		symb.constant = true ;
+ 		glisp.env.set(name,type);
+ 		}
+ 		else define_variable ("Type:" + name, type);
+ 	
+ 	var types = _TYPES ;
+ 		while(types) { // replace existing
+ 			if(types[0].name === name) {types[0] = type; break;}
+ 			types = types[1];
+ 			}
+ 	if(types === null) _TYPES = [type, _TYPES] ;
+ 	return type;
+ }
+ 
+function define_struct_type(name, meta, supertype, expr) { 
+	var type = define_type(name,supertype,expr);
+	type.meta = meta;
+	return type;
+	}
+ 
+ Type.prototype.toString = function () {
+ 	return  /* "#Type:" + */ this.name ;
+ }
+ 
+ 
+ Type.prototype.inspect = function () {
+ 	var name = this.name;
+ 	if(this.msuper) name = this.msuper.name + "." + name;
+ 	return "#Type:" + name  + glisp_message (this.t_expr, " "); // DBG
+ }
+ 
+ var _types = function () {
+ 	return _TYPES ;
+  }
+  
+ var _typep = function (obj) {
+ 	return (obj instanceof Type) ? _true : _false ;
+ }
+ 
+ var _anyp = function (  obj) {
+	return _true;
+}
+ var _objectp = function (obj) {
+ 	return  _true ;
+ }
+
+
+ /*---------------------------
+ type- functions
+ ------------------------------*/
+
+ // installs signature on each formal
+ // check match length formals <--> signature
+ function __install_signature (symb, lambda , types) {
+ 	var formals = lambda[1][0] ;
+ 	if (formals && ! Array.isArray (formals)) formals = [formals,null] ; // lambda x
+ 	_CONTEXT = _CONTEXT || symb ;
+ 		
+ 	while(formals) {
+ 			formals[0].type = (types[0] === _NULL_TYPE) ? null : types[0];
+ 			formals = formals[1];
+ 			types = types[1];
+ 			if(formals === null) break;
+ 			if(types === null) glisp_error(147,formals,"too short signature");
+ 			if( !Array.isArray(formals)) { // lambda (x y . z)
+ 					formals.type = (types[0] === _NULL_TYPE) ? null : types[0];
+ 					types = types[1];
+ 					break;
+ 					}
+ 			}
+ 	/*
+ 	if(types === null) glisp_error(147,symb,"missing return type") ;
+ 	symb.type = types[0];
+ 	types = types[1];
+ 	if(types !== null) glisp_error(147,types,"too-long signature") ;
+ 	*/
+ }
+ 
+ // checks and compile type-expr
+ // coming from make-type (no eval)
+ // (make-type foo 'ALBERT) : matching symb DOC NYI NYI 
+ // (make-type gee albert) : albert must be a type
+ 
+ function __type_expr  (expr,env) {
+ var pred, t_expr,i , toconc = null ;
+ 	
+ 	if(expr === _ellipsis || expr === _range_sep) return _ellipsis; // ...
+ 	
+ 	if(isQuote(expr)) {
+ 				expr =  expr[1][0] ;
+ 				if(expr instanceof Symbol) return expr ; // type = symbol to match
+ 				// other immediate NYI
+ 				glisp_error(23,expr,"'type-expr");
+ 				}
+ 				
+ 	if(typeof expr === "function") return expr;
+ 	if(expr instanceof Type) return expr.t_expr;
+ 	if(typeof expr === "number") return expr;
+ 	
+ 	if(expr instanceof Symbol) {
+ 	
+ 		pred = __find_Type(expr.name,"type-expr",true); // safe
+ 		if(pred) return pred.t_expr ;
+ 		
+ 		pred = glisp.env.get(expr.name) ; // Type
+ 		if(pred instanceof Type) return pred.t_expr;
+ 		
+ 		pred = glisp_look_sysfun(expr.name); // sys predicate
+ 	 	if(pred) return pred.jsfun;
+ 		
+ 		if(_LIB["struct.lib"])
+ 		if(__find_meta(expr.name)) // struct?
+ 			expr= new Symbol(expr.name + '?'); // generated by struct
+ 			
+ 		if(expr.fval)
+ 	 		return checkProc(expr,1,1,"type-expr") ;
+ 	 		
+ 	 	glisp_error(144,expr,"type-expr:symbol") ;
+ 	 	}
+ 	 	
+ 	 if(isXLambda(expr)) return checkProc(expr,1,1,"type-expr") ;
+ 	 	
+ 	 if(Array.isArray(expr)) { //  (list types ..) or (_or types ..)
+ 	 	t_expr = [_list] ; // default kind
+ 	 	while(expr) {
+ 	 	
+ 	 		if(expr[0] === _vertical_bar) {
+ 	 				t_expr[0] = _or ;
+ 	 				expr = expr[1];
+ 	 				continue;
+ 	 				}
+ 	 		if(expr[0] === _esperluette) {
+ 	 				t_expr[0] = _and ;
+ 	 				expr = expr[1];
+ 	 				continue;
+ 	 				}
+ 	 		// (a . b) pattern
+ 	 		if(! Array.isArray(expr)) { toconc = __type_expr(expr) ; break;}
+ 	 		t_expr.push(__type_expr(expr[0])) ;
+ 	 		expr= expr[1];
+ 	 	    }
+ 	 	 if (toconc) 
+ 	 	 	return __nconc_3 (__array_to_list(t_expr), toconc) ;
+        	else return __array_to_list(t_expr); 
+ 	 	} //(list types...) (or types ..)
+ 	 	
+ 	 if(expr instanceof Vector) {
+ 	 	t_expr = [] ;
+ 	 	expr = expr.vector ;
+ 	 	for(i = 0; i < expr.length; i++)
+ 	 		t_expr.push(__type_expr(expr[i])) ;
+		return [ _vector , [new Vector (t_expr) , null]] ;
+ 	 	}
+	glisp_error(144,expr,"type-expr") ;
+ }
+ 
+
+// checks value against t-expr
+// returns true or offending value
+
+function __type_check (value, t_expr, env) {
+var kind, t_check, ellipsis, t_status , i, t, last ,ored  ;
+env = env || glisp.user ;
+
+ 	if(typeof t_expr === "function") { // lisp predicate : no env
+ 		if( t_expr (value) === _false)
+ 			return value ;
+ 			else return true; }
+ 			
+ 	
+ 	if(isLambda  (t_expr)) { // user predicate or struct? predicate
+ 		if (__ffuncall([t_expr , [value,null]], env) === _false)
+ 			return value ;
+ 			else return true;
+ 			}
+ 			
+ 	if(t_expr === null) return true; // _NULL_TYPE
+ 	
+ 	if(t_expr instanceof  Symbol) {
+ 		return (value === t_expr) ? true : value  ;
+ 		}
+ 		
+ 	if(typeof t_expr=== "number" ) {
+ 		return (value === t_expr) ? true : value ; 
+ 		}
+		
+ 	if(! Array.isArray(t_expr))	
+ 		glisp_error(144,t_expr,"type-check-list") ;
+ 		
+ 	kind = t_expr[0];
+ 	t_expr = t_expr[1];
+ 	ellipsis = false;
+ 	
+ 	if( kind === _or) {
+ 		 while (t_expr) {
+ 			if( __type_check(value,t_expr[0],env) === true) return true;
+ 			t_expr = t_expr[1];
+ 			}
+ 		// FAILED OR + NO MATCH
+ 		return value ;
+ 		}
+ 		
+ 	if( kind === _and) {
+ 		 while (t_expr) {
+ 			if( __type_check(value,t_expr[0],env) !== true) return value;
+ 			t_expr = t_expr[1];
+ 			}
+ 		return true ;
+ 		}
+
+ 	if(kind === _list) {
+ 		if(! Array.isArray (value))
+ 				return value ;
+ 				
+ 		t_check = t_expr[0];
+ 		while(value) {
+//writeln (glisp_message(value,"checking ")) ;
+//writeln (glisp_message(t_expr ,"t-expr ")) ;
+ 			t_status = __type_check(value[0],t_check) ;
+ 			if( t_status !== true) return t_status ; // avance t_expr if ellipsis NYI NYI
+ 			value = value[1];
+ 			if(value === null && ellipsis)  return true;
+			if(ellipsis) continue;
+			
+ 			t_expr = t_expr[1];
+ 			if(t_expr === null && value === null) return true;
+ 			if(t_expr === null) return value ;
+ 			ellipsis = (t_expr[0] === _ellipsis) ;
+ 			if(value === null)  
+ 				return ellipsis ? true :  "too short list"  ;
+ 
+ 			if(! Array.isArray(t_expr)) { // (String . Number) case
+ 						return __type_check(value,t_expr) ;
+ 						}
+ 				
+ 			if( ! ellipsis ) t_check = t_expr[0] ;
+ 			}
+ 		return true;
+ 		} // _list
+ 			
+ 	if(kind === _vector) {
+ 		t_expr = t_expr[0];
+ 		if(! (t_expr instanceof Vector))
+ 				glisp_error(144,t_expr,"type-check-vector") ;
+ 		
+ 		if(! (value instanceof Vector))
+ 				return value;
+ 				
+ 		value = value.vector;
+ 		t_expr = t_expr.vector;
+ 		t_check = t_expr[0];
+ 		t = 0 ;
+ 		
+ 		for(i=0; i < value.length; i++) {
+//writeln (glisp_message(value[i],"checking-v ")) ;
+//writeln (glisp_message(t_check ,"t-check-v ")) ;
+ 			t_status  = __type_check(value[i],t_check) ;
+ 			if( t_status !== true) return t_status ; 
+			if(ellipsis) continue;
+			if(i + 1 >= value.length) break;
+			
+ 			t = t + 1; // msg too long NYI
+ 			if(t_expr[t] === undefined) return  value[i] ;
+ 			ellipsis = (t_expr[t] === _ellipsis) ;
+ 			if( ! ellipsis ) t_check = t_expr[t] ;
+ 			}
+ 			// value exhausted here
+ 			if(ellipsis) return true;
+ 			last = t_expr[++t] ;
+ 			if(last !== undefined && last !== _ellipsis ) 
+ 					return  "too short vector" ;
+ 			return true;
+ 			} // _vector
+
+ 	glisp_error(144,t_expr,"type-check-2") ;
+ }
+ 
+ /*--------------------
+ Types API
+ ---------------------------*/
+ var _type_inspect = function (type) {
+ 		type = __find_Type(type,"type-inspect") ;
+ 		return type.inspect();
+ }
+ 
+// (type-check value type [proc])
+ var _type_check = function (top,argc,env) {
+ 	 var value = _stack[top++];
+ 	 var type = _stack[top++];
+ 	 var proc = (argc > 2) ? _stack[top] : null ;
+ 	 
+ 	 type = __find_Type(type,"type-check") ;
+	
+ 		var t_status = __type_check (value, type.t_expr, env);
+ 		if (t_status !== true) {
+ 				if(proc) {
+ 					proc = checkProc(proc,1,1,"type-check") ;
+ 					return __funcall([proc,[value,null]],env);
+ 					}
+ 				glisp_error(145, t_status , type.name);
+ 				}
+ 		return _true;
+ 		}
+ 
+var _type_of = function (self, env) {
+		self = self[1];
+		var value = __eval(self[0],env) ;
+		var type= self[1][0];
+	 	type = __find_Type(type,"type-of?") ;
+ 		return  (__type_check (value, type.t_expr, env) === true ) ? _true : _false;
+ 		}
+
+ 		
+var _make_type = function (self,env) { // (type name [super] t-expr)
+	self = self[1];
+	var name = nameToString(self[0],"type");
+	var supertype = self[1];
+	var t_expr = self[1][1] ;
+	
+	if (t_expr === null) { t_expr = supertype; supertype = null;}
+	if (supertype) supertype = supertype[0] ;
+	t_expr = __type_expr(t_expr[0],env);
+	return define_type(name,supertype,t_expr,false);
+	}
+	
+// gets symb.signature = list of Types
+// (signature func type type type ...) 
+var _signature = function (symb) { 
+ 	if (! (symb instanceof Symbol)) glisp_error(23,symb,"signature") ;
+ 	return symb.signature ;
+ }
+ 
+ /*-----------------------
+http://www.gigamonkeys.com/book/object-reorientation-generic-functions.html
+G E N E R I C S
+----------------------------*/
+function __sort_methods (methods) {
+	function cmp_methods(a, b) {
+		return b.rank - a.rank ;
+		}
+	return methods.sort(cmp_methods) ;
+}
+
+var _GENERICS = {} ;
+
+function Generic (name) {
+	this.name = name;
+	this.methods = [] ; // sorted js array - MOST DISCRIMINAT first
+
+	_GENERICS[name] = this;
+	define_variable("generic:" + name, this); 
+	return this;
+}
+
+Generic.prototype.toString  = function () {
+	return glisp_message (__array_to_list(this.methods) , "#Generic:" + this.name ) ;
+}
+
+// add or replace
+Generic.prototype.add_method = function (method) {
+		for (var i=0; i < this.methods.length ; i++)
+				if (this.methods[i].symb === method.symb) {
+					this.methods[i] = method ;
+					return; // no need to sort
+					}
+		this.methods.push(method); 
+		this.methods = __sort_methods(this.methods);
+	 }
+	 
+Generic.prototype.find_method_lambda = function (values, env, wants_super) {
+var types, s_values = values, lambda, args ;
+_next_method:
+	for(var i=0; i< this.methods.length ; i++ ) {
+		types  = this.methods[i].signature;
+		lambda = this.methods[i].lambda ;
+		args = lambda[1][0] ;
+		values = s_values ;
+
+		while(types) {
+			if(values === null) continue _next_method ; 
+			if(types[0] === _NULL_TYPE) break;
+			
+			if(args instanceof Formal) { // x y .rest
+				if(__type_check(values,types[0].t_expr,env) !== true) continue _next_method ;
+				break ; // ok - no more to check
+				}
+				
+			if(__type_check(values[0],types[0].t_expr,env) !== true) continue _next_method ;
+			types = types[1];
+			values = values[1];
+			args = args[1];
+			}
+		if(wants_super) {wants_super = false; continue;}
+		return lambda ;
+		}
+	// glisp_error(113,values,"generic:" + this.name);
+	return null;
+}
+
+// assert form[0] === this
+// perform call or error 113
+Generic.prototype.call = function (form, env) {
+// cons..uming :  get rid of __evlis with special __lambda_bind NYI NYI NYI
+		var values = __evlis(form[1],env) ;
+		var lambda = this.find_method_lambda(values,env) ;
+		if(lambda === null) glisp_error(113,values,"generic:"+this.name);
+		return __flambda_call(lambda,values,env) ; // NO type check
+}
+
+// (run-super generic instance args ...)
+var _call_super = function (self, env) {
+	self = self[1];
+	var generic = _GENERICS[nameToString(self[0],"call-super")];
+	if(!generic) glisp_error(112,self[0],"call-super");
+	self = self[1];
+	var values = __evlis(self,env);
+	var lambda = generic.find_method_lambda(values,env,true) ; // wants super
+	if(! lambda) glisp_error(115,self[0],"call-super:"+generic.name);
+	return __flambda_call(lambda,values,env) ;
+}
+
+/*-------------------------
+methods utilities
+----------------------------*/
+
+function method_resolve_dot_refs(body,args,signature) {
+ if(! _LIB["struct.lib"]) return;
+		while(signature) {
+		if(signature[0].meta) struct_resolve_dot_ref(body,args[0],"struct", signature[0].meta);
+		signature= signature[1];
+		args = args[1];
+		if(! Array.isArray(args)) break;
+		}
+}
+
+/*-------------------------
+M E T H O D S
+-------------------------------*/
+var _NULL_TYPE = new Type ("_", null, null);
+_NULL_TYPE.supercount = 0;
+
+function Method (gname , symb , rank, signature , lambda) {
+	this.name = gname; // generic name (string)
+	this.symb = symb; // symbol  = draw:Circle:Number:Number____
+	this.signature = signature; // list of all args types|null_type 
+	this.lambda = lambda; // called by generic.call
+	this.rank = rank ; // order by specificity
+}
+
+Method.prototype.toString = function () {
+	return "#Method " + this.name + 
+		":" + this.rank +  // DBG
+		" " + this.symb.name ;
+		}
+
+var _methodp = function (obj) {
+	return (obj instanceof Method) ? _true : _false ;
+}
+
+// input : symbol type:name or (type:name default ... other)
+// return { type : a Type , arg : symb}
+
+function __type_name(arg) { 
+//  (glisp_message (arg ,"TN")) ;
+	var tn ;
+	if(isList(arg)) { // arg with default value
+		tn = __type_name(arg[0]) ;
+		return { type : tn.type , arg : [tn.arg, arg[1]]} ;
+		}
+	if(! (arg instanceof Symbol)) glisp_error(23,arg,"define-type:arg-name");
+	tn = arg.name.split(":");
+	if(tn.length === 1) return {type : _NULL_TYPE, arg : new Symbol(tn[0])} ;
+	if(tn.length === 2) return {type : __find_Type(tn[0],"define-type"),arg : new Symbol(tn[1])} ;
+	glisp_error(146,arg,"define-type:arg") ;
+}
+
+// input:  list of number:ident ...
+// returns lists {names : without types , types : types-list (may be all _NULL_TYPE), rank : rank }
+function __split_types(symbs) {
+	var names = [], types = [], tn , last = null;
+	var prty = 100, rank = 0; 
+	
+	if(symbs === null) return { names : null, types : null, rank : 0} ;
+	for(; symbs !== null ; symbs = symbs[1]) {
+		tn = __type_name(symbs[0]);
+		types.push(tn.type);
+		names.push(tn.arg);
+		rank += (tn.type.supercount * prty-- );
+		if(symbs[1] && ! Array.isArray(symbs[1])) { // (f x . y)
+				tn = __type_name(symbs[1]);
+				types.push(tn.type);
+				last = tn.arg ;
+				rank += (tn.type.supercount * 2 * prty-- );
+				break;
+				}
+		}
+	return { names : __nconc_3 ( __array_to_list(names) , last) ,
+			 types : __array_to_list(types),
+			 rank : rank } ;
+}
+
+// scan types list
+// build signature
+// patch body <struct:arg>.name -> arg.slots[i]
+// call define - NO install signature : check made by dispatch to get body lambda
+// method := new Method
+// generics.add_method(method)
+
+function __make_method(/*symbol*/generic,types,body,env) {
+	var tn = __split_types(types);
+	var args = tn.names;
+	var signature  = tn.types;
+		
+	var msymb =  new Symbol (generic.name + ":" + __list_to_array(signature).join(":")) ;
+	var method = new Method (generic.name, msymb ,tn.rank,signature, /* no lambda yet*/ null);
+	
+	// bonus mycat.legs -> (ref mycat 0)
+	// if(_LIB["struct.lib"])
+	method_resolve_dot_refs(body,args,signature);
+	
+//writeln(glisp_message(args,"ARGS"));
+//writeln(glisp_message(signature,"SIGN"));
+	
+	var defcall = [_define, [[msymb , args] ,body]] ;
+	msymb.fval = null;
+	_define(defcall,env);
+	if(msymb.fval === null) glisp_error(27,msymb,"make-method");
+	method.lambda = msymb.fval ;
+   
+	var generic = _GENERICS[generic.name] || new Generic(generic.name) ; // generic:name
+	generic.add_method(method);
+	return method ;
+	}
+
+
+// (define-method  (name Type:arg Type:arg ...) body)
+var _define_method = function (self, env) {	
+	self = self[1];
+	var args = self[0];
+	if (notIsList (args)) glisp_error(20,args,"define-method");
+	var name = args[0];
+	if(! (name instanceof Symbol)) glisp_error(23,name,"define-method");
+	var types = args[1];
+	var body = self[1];
+	return __make_method(name,types,body,env);
+	}
+
+/*------------------------
+API
+-----------------------*/
+
+ function boot_types () {
+ 	define_sysfun (new Sysfun('any?', _anyp,1,1));
+ 	define_sysfun (new Sysfun('object?', _objectp,1,1));
+ 	
+ 	define_type ('Object', null,  _objectp,true) ; // javascript
+ 	_OBJECT = _TYPES[0];
+ 	define_type ('Type', null,   _typep,true) ;
+ 	define_type ('Any', null,   _anyp,true) ;
+ 	define_type ('Procedure', null, _procedurep,true) ; 
+ 	define_type ('Boolean', null, _boolp,true) ;
+ 	define_type ('Symbol', null, _symbolp,true) ;
+ 	define_type ('String',null,   _stringp,true) ;
+ 	define_type ('Vector',null,   _vectorp,true);
+ 	define_type ('Box', null,  _boxp,true);
+	define_type ("Stream",null,  _streamp,true);
+	
+// must have ECHO in lib
+	if(_LIB["sequences.lib"]) define_type ("Procrastinator",null,_procrastinator_p,true);
+	if(_LIB["struct.lib"]) define_type ("Struct",null,_structp,true); 
+	if(_LIB["hash.lib"]) define_type ("Hash",null,_hash_p,true); 
+ 
+	define_type ('Pair', null,  _pairp,true) ; // pair or list
+	define_type ('List', null, _listp,true) ; // pair or null
+	define_type ('Set', 'List',  _set_p,true) ; 
+	define_type ('Empty', null,  _nullp,true) ;
+	define_type ('Null', 'List' ,  _nullp,true) ;
+	define_type ('!Empty',null,   _not_nullp,true) ;
+	define_type ('!Null',null,   _not_nullp,true) ;
+	
+	define_type ('Date', null,  _date_p,true) ;
+	define_type ('Number', null,  _numberp,true) ;
+	define_type ('Complex', 'Number',  _complexp,true) ;
+	define_type ('Real', 'Complex',  _realp,true) ;
+	define_type ('Rational', 'Real',  _rationalp,true) ;
+	define_type ('Integer', 'Real',   _integerp,true) ;
+	
+	define_type ('Exact', 'Number', _exactp,true) ;
+	define_type ('Inexact','Number',   [_and,[ _numberp, [_inexactp,null]]] ,true) ;
+	define_type ('Positive','Real',  [_and,[ _realp, [_positivep,null]]] ,true) ; 
+	define_type ('Negative','Real',  [_and,[ _realp, [_negativep,null]]] ,true) ; 
+	define_type ('Positive*','Real',  [_and,[ _realp, [_spositivep,null]]] ,true) ; 
+	define_type ('Zero', 'Number',    [_and,[ _numberp, [_zerop,null]]] ,true) ; 
+	define_type ('!Zero','Number',    [_and,[ _numberp, [_not_zerop,null]]] ,true) ; 
+
+	define_type ('Even', 'Integer',   [_and,[ _integerp, [_evenp,null]]] ,true) ;
+	define_type ('Odd', 'Integer',    [_and,[ _integerp, [_oddp,null]]] ,true) ;
+	define_type ('Prime', 'Integer',   [_and,[ _integerp, [_primep,null]]] ,true) ;
+
+	define_special (new Sysfun('types.type',_make_type,2,3)); // compat - remove me NYI
+	define_special (new Sysfun('types.make-type',_make_type,2,3)); // (type name [super]  t-expr)
+	define_sysfun  (new Sysfun('types.types',_types, 0,0)); // -> (all types objects)
+	define_special (new Sysfun('types.type?',_typep,1,1)); 
+	
+ 	define_sysfun (new Sysfun('types.signature',_signature,1,1)); // (sign 'foo)
+ 	define_sysfun (new Sysfun('types.type-check', _type_check,2,3));
+ 	define_sysfun (new Sysfun('types.type-inspect', _type_inspect,1,1));
+ 	define_special (new Sysfun('types.type-of?', _type_of,2,2)); // (expr type)
+ 	
+ 	define_special (new Sysfun('types.define-method', _define_method,1, undefined));
+ 	define_special (new Sysfun('types.call-super', _call_super,2, undefined));
+ 	
+ 	
+	_LIB["types.lib"] = true;
+	 writeln("📌 For typed vectors ,please see the  🚲 vlib.lib library.","color:orange");
+     writeln("types.lib V1.2","color:green") ;
+	}
+	
+boot_types();
+

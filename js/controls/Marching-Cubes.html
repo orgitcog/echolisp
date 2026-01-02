@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"><title>http://stemkoski.github.io/Three.js/Marching-Cubes.html</title><link rel="stylesheet" type="text/css" href="Marching-Cubes_fichiers/viewsource.css"></head><body contextmenu="actions" id="viewsource" class="highlight" style="-moz-tab-size: 4"><pre id="line1"><span></span><span class="doctype">&lt;!doctype html&gt;</span><span>
+<span id="line2"></span></span><span>&lt;<span class="start-tag">html</span> <span class="attribute-name">lang</span>="<a class="attribute-value">en</a>"&gt;</span><span>
+<span id="line3"></span></span><span>&lt;<span class="start-tag">head</span>&gt;</span><span>
+<span id="line4"></span>	</span><span>&lt;<span class="start-tag">title</span>&gt;</span><span>Marching Cubes (Three.js)</span><span>&lt;/<span class="end-tag">title</span>&gt;</span><span>
+<span id="line5"></span>	</span><span>&lt;<span class="start-tag">meta</span> <span class="attribute-name">charset</span>="<a class="attribute-value">utf-8</a>"&gt;</span><span>
+<span id="line6"></span>	</span><span>&lt;<span class="start-tag">meta</span> <span class="attribute-name">name</span>="<a class="attribute-value">viewport</a>" <span class="attribute-name">content</span>="<a class="attribute-value">width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0</a>"&gt;</span><span>
+<span id="line7"></span>	</span><span>&lt;<span class="start-tag">link</span> <span class="attribute-name">rel</span>=<a class="attribute-value">stylesheet</a> <span class="attribute-name">href</span>="<a href="view-source:http://stemkoski.github.io/Three.js/css/base.css" class="attribute-value">css/base.css</a>"<span>/</span>&gt;</span><span>
+<span id="line8"></span></span><span>&lt;/<span class="end-tag">head</span>&gt;</span><span>
+<span id="line9"></span></span><span>&lt;<span class="start-tag">body</span>&gt;</span><span>
+<span id="line10"></span>
+<span id="line11"></span></span><span>&lt;<span class="start-tag">script</span> <span class="attribute-name">src</span>="<a href="view-source:http://stemkoski.github.io/Three.js/js/Three.js" class="attribute-value">js/Three.js</a>"&gt;</span><span></span><span>&lt;/<span class="end-tag">script</span>&gt;</span><span>
+<span id="line12"></span></span><span>&lt;<span class="start-tag">script</span> <span class="attribute-name">src</span>="<a href="view-source:http://stemkoski.github.io/Three.js/js/Detector.js" class="attribute-value">js/Detector.js</a>"&gt;</span><span></span><span>&lt;/<span class="end-tag">script</span>&gt;</span><span>
+<span id="line13"></span></span><span>&lt;<span class="start-tag">script</span> <span class="attribute-name">src</span>="<a href="view-source:http://stemkoski.github.io/Three.js/js/Stats.js" class="attribute-value">js/Stats.js</a>"&gt;</span><span></span><span>&lt;/<span class="end-tag">script</span>&gt;</span><span>
+<span id="line14"></span></span><span>&lt;<span class="start-tag">script</span> <span class="attribute-name">src</span>="<a href="view-source:http://stemkoski.github.io/Three.js/js/OrbitControls.js" class="attribute-value">js/OrbitControls.js</a>"&gt;</span><span></span><span>&lt;/<span class="end-tag">script</span>&gt;</span><span>
+<span id="line15"></span></span><span>&lt;<span class="start-tag">script</span> <span class="attribute-name">src</span>="<a href="view-source:http://stemkoski.github.io/Three.js/js/THREEx.KeyboardState.js" class="attribute-value">js/THREEx.KeyboardState.js</a>"&gt;</span><span></span><span>&lt;/<span class="end-tag">script</span>&gt;</span><span>
+<span id="line16"></span></span><span>&lt;<span class="start-tag">script</span> <span class="attribute-name">src</span>="<a href="view-source:http://stemkoski.github.io/Three.js/js/THREEx.FullScreen.js" class="attribute-value">js/THREEx.FullScreen.js</a>"&gt;</span><span></span><span>&lt;/<span class="end-tag">script</span>&gt;</span><span>
+<span id="line17"></span></span><span>&lt;<span class="start-tag">script</span> <span class="attribute-name">src</span>="<a href="view-source:http://stemkoski.github.io/Three.js/js/THREEx.WindowResize.js" class="attribute-value">js/THREEx.WindowResize.js</a>"&gt;</span><span></span><span>&lt;/<span class="end-tag">script</span>&gt;</span><span>
+<span id="line18"></span>
+<span id="line19"></span></span><span class="comment">&lt;!-- Contains Lookup Tables for the Marching Cubes Algorithm --&gt;</span><span>
+<span id="line20"></span></span><span>&lt;<span class="start-tag">script</span> <span class="attribute-name">src</span>="<a href="view-source:http://stemkoski.github.io/Three.js/js/MarchingCubesData.js" class="attribute-value">js/MarchingCubesData.js</a>"&gt;</span><span></span><span>&lt;/<span class="end-tag">script</span>&gt;</span><span>
+<span id="line21"></span>
+<span id="line22"></span></span><span class="comment">&lt;!-- jQuery code to display an information button and box when clicked. --&gt;</span><span>
+<span id="line23"></span></span><span>&lt;<span class="start-tag">script</span> <span class="attribute-name">src</span>="<a href="view-source:http://stemkoski.github.io/Three.js/js/jquery-1.9.1.js" class="attribute-value">js/jquery-1.9.1.js</a>"&gt;</span><span></span><span>&lt;/<span class="end-tag">script</span>&gt;</span><span>
+<span id="line24"></span></span><span>&lt;<span class="start-tag">script</span> <span class="attribute-name">src</span>="<a href="view-source:http://stemkoski.github.io/Three.js/js/jquery-ui.js" class="attribute-value">js/jquery-ui.js</a>"&gt;</span><span></span><span>&lt;/<span class="end-tag">script</span>&gt;</span><span>
+<span id="line25"></span></span><span>&lt;<span class="start-tag">link</span> <span class="attribute-name">rel</span>=<a class="attribute-value">stylesheet</a> <span class="attribute-name">href</span>="<a href="view-source:http://stemkoski.github.io/Three.js/css/jquery-ui.css" class="attribute-value">css/jquery-ui.css</a>" <span>/</span>&gt;</span><span>
+<span id="line26"></span></span><span>&lt;<span class="start-tag">link</span> <span class="attribute-name">rel</span>=<a class="attribute-value">stylesheet</a> <span class="attribute-name">href</span>="<a href="view-source:http://stemkoski.github.io/Three.js/css/info.css" class="attribute-value">css/info.css</a>"<span>/</span>&gt;</span><span>
+<span id="line27"></span></span><span>&lt;<span class="start-tag">script</span> <span class="attribute-name">src</span>="<a href="view-source:http://stemkoski.github.io/Three.js/js/info.js" class="attribute-value">js/info.js</a>"&gt;</span><span></span><span>&lt;/<span class="end-tag">script</span>&gt;</span><span>
+<span id="line28"></span></span><span>&lt;<span class="start-tag">div</span> <span class="attribute-name">id</span>="<a class="attribute-value">infoButton</a>"&gt;</span><span></span><span>&lt;/<span class="end-tag">div</span>&gt;</span><span>
+<span id="line29"></span></span><span>&lt;<span class="start-tag">div</span> <span class="attribute-name">id</span>="<a class="attribute-value">infoBox</a>" <span class="attribute-name">title</span>="<a class="attribute-value">Demo Information</a>"&gt;</span><span>
+<span id="line30"></span>This three.js demo is part of a collection at
+<span id="line31"></span></span><span>&lt;<span class="start-tag">a</span> <span class="attribute-name">href</span>="<a href="view-source:http://stemkoski.github.io/Three.js/" class="attribute-value">http://stemkoski.github.io/Three.js/</a>"&gt;</span><span>http://stemkoski.github.io/Three.js/</span><span>&lt;/<span class="end-tag">a</span>&gt;</span><span>
+<span id="line32"></span></span><span>&lt;/<span class="end-tag">div</span>&gt;</span><span>
+<span id="line33"></span></span><span title="Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple.
+Tirets consécutifs ne fermant pas un commentaire. «&nbsp;--&nbsp;» n'est pas autorisé à l'intérieur d'un commentaire, mais «&nbsp;- -&nbsp;» l'est par exemple." class="error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error error comment">&lt;!-- ------------------------------------------------------------ --&gt;</span><span>
+<span id="line34"></span>
+<span id="line35"></span></span><span>&lt;<span class="start-tag">div</span> <span class="attribute-name">id</span>="<a class="attribute-value">ThreeJS</a>" <span class="attribute-name">style</span>="<a class="attribute-value">position: absolute; left:0px; top:0px</a>"&gt;</span><span></span><span>&lt;/<span class="end-tag">div</span>&gt;</span><span>
+<span id="line36"></span></span><span>&lt;<span class="start-tag">script</span>&gt;</span><span>
+<span id="line37"></span>/*
+<span id="line38"></span>	Three.js "tutorials by example"
+<span id="line39"></span>	Author: Lee Stemkoski
+<span id="line40"></span>	Date: July 2013 (three.js v59dev)
+<span id="line41"></span>*/
+<span id="line42"></span>
+<span id="line43"></span>// MAIN
+<span id="line44"></span>
+<span id="line45"></span>// standard global variables
+<span id="line46"></span>var container, scene, camera, renderer, controls, stats;
+<span id="line47"></span>var keyboard = new THREEx.KeyboardState();
+<span id="line48"></span>var clock = new THREE.Clock();
+<span id="line49"></span>
+<span id="line50"></span>// custom global variables
+<span id="line51"></span>var points = [];
+<span id="line52"></span>var values = [];
+<span id="line53"></span>var size;
+<span id="line54"></span>
+<span id="line55"></span>init();
+<span id="line56"></span>animate();
+<span id="line57"></span>
+<span id="line58"></span>// FUNCTIONS 		
+<span id="line59"></span>function init() 
+<span id="line60"></span>{
+<span id="line61"></span>	// SCENE
+<span id="line62"></span>	scene = new THREE.Scene();
+<span id="line63"></span>	// CAMERA
+<span id="line64"></span>	var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight;
+<span id="line65"></span>	var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 0.1, FAR = 20000;
+<span id="line66"></span>	camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
+<span id="line67"></span>	scene.add(camera);
+<span id="line68"></span>	camera.position.set(20,20,60);
+<span id="line69"></span>	camera.lookAt(scene.position);	
+<span id="line70"></span>	// RENDERER
+<span id="line71"></span>	if ( Detector.webgl )
+<span id="line72"></span>		renderer = new THREE.WebGLRenderer( {antialias:true} );
+<span id="line73"></span>	else
+<span id="line74"></span>		renderer = new THREE.CanvasRenderer(); 
+<span id="line75"></span>	renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+<span id="line76"></span>	container = document.getElementById( 'ThreeJS' );
+<span id="line77"></span>	container.appendChild( renderer.domElement );
+<span id="line78"></span>	// EVENTS
+<span id="line79"></span>	THREEx.WindowResize(renderer, camera);
+<span id="line80"></span>	THREEx.FullScreen.bindKey({ charCode : 'm'.charCodeAt(0) });
+<span id="line81"></span>	// CONTROLS
+<span id="line82"></span>	controls = new THREE.OrbitControls( camera, renderer.domElement );
+<span id="line83"></span>	// STATS
+<span id="line84"></span>	stats = new Stats();
+<span id="line85"></span>	stats.domElement.style.position = 'absolute';
+<span id="line86"></span>	stats.domElement.style.bottom = '0px';
+<span id="line87"></span>	stats.domElement.style.zIndex = 100;
+<span id="line88"></span>	container.appendChild( stats.domElement );
+<span id="line89"></span>	// LIGHT
+<span id="line90"></span>	var light = new THREE.PointLight(0xffffff);
+<span id="line91"></span>	light.position.set(0,10,0);
+<span id="line92"></span>	scene.add(light);
+<span id="line93"></span>	 
+<span id="line94"></span>	////////////
+<span id="line95"></span>	// CUSTOM //
+<span id="line96"></span>	////////////
+<span id="line97"></span>	
+<span id="line98"></span>	scene.add( new THREE.AxisHelper(100) );
+<span id="line99"></span>
+<span id="line100"></span>	// number of cubes along a side
+<span id="line101"></span>	size = 20;
+<span id="line102"></span>
+<span id="line103"></span>	var axisMin = -10;
+<span id="line104"></span>	var axisMax =  10;
+<span id="line105"></span>	var axisRange = axisMax - axisMin;
+<span id="line106"></span>	
+<span id="line107"></span>	// Generate a list of 3D points and values at those points
+<span id="line108"></span>	for (var k = 0; k </span><span>&lt; </span><span>size; k++)
+<span id="line109"></span>	for (var j = 0; j </span><span>&lt; </span><span>size; j++)
+<span id="line110"></span>	for (var i = 0; i </span><span>&lt; </span><span>size; i++)
+<span id="line111"></span>	{
+<span id="line112"></span>		// actual values
+<span id="line113"></span>		var x = axisMin + axisRange * i / (size - 1);
+<span id="line114"></span>		var y = axisMin + axisRange * j / (size - 1);
+<span id="line115"></span>		var z = axisMin + axisRange * k / (size - 1);
+<span id="line116"></span>		points.push( new THREE.Vector3(x,y,z) );
+<span id="line117"></span>		var value = x*x + y*y - z*z - 25;
+<span id="line118"></span>	    values.push( value );
+<span id="line119"></span>	}
+<span id="line120"></span>	 
+<span id="line121"></span>	// Marching Cubes Algorithm
+<span id="line122"></span>	
+<span id="line123"></span>	var size2 = size * size;
+<span id="line124"></span>
+<span id="line125"></span>	// Vertices may occur along edges of cube, when the values at the edge's endpoints
+<span id="line126"></span>	//   straddle the isolevel value.
+<span id="line127"></span>	// Actual position along edge weighted according to function values.
+<span id="line128"></span>	var vlist = new Array(12);
+<span id="line129"></span>	
+<span id="line130"></span>	var geometry = new THREE.Geometry();
+<span id="line131"></span>	var vertexIndex = 0;
+<span id="line132"></span>	
+<span id="line133"></span>	for (var z = 0; z </span><span>&lt; </span><span>size - 1; z++)
+<span id="line134"></span>	for (var y = 0; y </span><span>&lt; </span><span>size - 1; y++)
+<span id="line135"></span>	for (var x = 0; x </span><span>&lt; </span><span>size - 1; x++)
+<span id="line136"></span>	{
+<span id="line137"></span>		// index of base point, and also adjacent points on cube
+<span id="line138"></span>		var p    = x + size * y + size2 * z,
+<span id="line139"></span>			px   = p   + 1,
+<span id="line140"></span>			py   = p   + size,
+<span id="line141"></span>			pxy  = py  + 1,
+<span id="line142"></span>			pz   = p   + size2,
+<span id="line143"></span>			pxz  = px  + size2,
+<span id="line144"></span>			pyz  = py  + size2,
+<span id="line145"></span>			pxyz = pxy + size2;
+<span id="line146"></span>		
+<span id="line147"></span>		// store scalar values corresponding to vertices
+<span id="line148"></span>		var value0 = values[ p    ],
+<span id="line149"></span>			value1 = values[ px   ],
+<span id="line150"></span>			value2 = values[ py   ],
+<span id="line151"></span>			value3 = values[ pxy  ],
+<span id="line152"></span>			value4 = values[ pz   ],
+<span id="line153"></span>			value5 = values[ pxz  ],
+<span id="line154"></span>			value6 = values[ pyz  ],
+<span id="line155"></span>			value7 = values[ pxyz ];
+<span id="line156"></span>		
+<span id="line157"></span>		// place a "1" in bit positions corresponding to vertices whose
+<span id="line158"></span>		//   isovalue is less than given constant.
+<span id="line159"></span>		
+<span id="line160"></span>		var isolevel = 0;
+<span id="line161"></span>		
+<span id="line162"></span>		var cubeindex = 0;
+<span id="line163"></span>		if ( value0 </span><span>&lt; </span><span>isolevel ) cubeindex |= 1;
+<span id="line164"></span>		if ( value1 </span><span>&lt; </span><span>isolevel ) cubeindex |= 2;
+<span id="line165"></span>		if ( value2 </span><span>&lt; </span><span>isolevel ) cubeindex |= 8;
+<span id="line166"></span>		if ( value3 </span><span>&lt; </span><span>isolevel ) cubeindex |= 4;
+<span id="line167"></span>		if ( value4 </span><span>&lt; </span><span>isolevel ) cubeindex |= 16;
+<span id="line168"></span>		if ( value5 </span><span>&lt; </span><span>isolevel ) cubeindex |= 32;
+<span id="line169"></span>		if ( value6 </span><span>&lt; </span><span>isolevel ) cubeindex |= 128;
+<span id="line170"></span>		if ( value7 </span><span>&lt; </span><span>isolevel ) cubeindex |= 64;
+<span id="line171"></span>		
+<span id="line172"></span>		// bits = 12 bit number, indicates which edges are crossed by the isosurface
+<span id="line173"></span>		var bits = THREE.edgeTable[ cubeindex ];
+<span id="line174"></span>		
+<span id="line175"></span>		// if none are crossed, proceed to next iteration
+<span id="line176"></span>		if ( bits === 0 ) continue;
+<span id="line177"></span>		
+<span id="line178"></span>		// check which edges are crossed, and estimate the point location
+<span id="line179"></span>		//    using a weighted average of scalar values at edge endpoints.
+<span id="line180"></span>		// store the vertex in an array for use later.
+<span id="line181"></span>		var mu = 0.5; 
+<span id="line182"></span>		
+<span id="line183"></span>		// bottom of the cube
+<span id="line184"></span>		if ( bits &amp; 1 )
+<span id="line185"></span>		{		
+<span id="line186"></span>			mu = ( isolevel - value0 ) / ( value1 - value0 );
+<span id="line187"></span>			vlist[0] = points[p].clone().lerp( points[px], mu );
+<span id="line188"></span>		}
+<span id="line189"></span>		if ( bits &amp; 2 )
+<span id="line190"></span>		{
+<span id="line191"></span>			mu = ( isolevel - value1 ) / ( value3 - value1 );
+<span id="line192"></span>			vlist[1] = points[px].clone().lerp( points[pxy], mu );
+<span id="line193"></span>		}
+<span id="line194"></span>		if ( bits &amp; 4 )
+<span id="line195"></span>		{
+<span id="line196"></span>			mu = ( isolevel - value2 ) / ( value3 - value2 );
+<span id="line197"></span>			vlist[2] = points[py].clone().lerp( points[pxy], mu );
+<span id="line198"></span>		}
+<span id="line199"></span>		if ( bits &amp; 8 )
+<span id="line200"></span>		{
+<span id="line201"></span>			mu = ( isolevel - value0 ) / ( value2 - value0 );
+<span id="line202"></span>			vlist[3] = points[p].clone().lerp( points[py], mu );
+<span id="line203"></span>		}
+<span id="line204"></span>		// top of the cube
+<span id="line205"></span>		if ( bits &amp; 16 )
+<span id="line206"></span>		{
+<span id="line207"></span>			mu = ( isolevel - value4 ) / ( value5 - value4 );
+<span id="line208"></span>			vlist[4] = points[pz].clone().lerp( points[pxz], mu );
+<span id="line209"></span>		}
+<span id="line210"></span>		if ( bits &amp; 32 )
+<span id="line211"></span>		{
+<span id="line212"></span>			mu = ( isolevel - value5 ) / ( value7 - value5 );
+<span id="line213"></span>			vlist[5] = points[pxz].clone().lerp( points[pxyz], mu );
+<span id="line214"></span>		}
+<span id="line215"></span>		if ( bits &amp; 64 )
+<span id="line216"></span>		{
+<span id="line217"></span>			mu = ( isolevel - value6 ) / ( value7 - value6 );
+<span id="line218"></span>			vlist[6] = points[pyz].clone().lerp( points[pxyz], mu );
+<span id="line219"></span>		}
+<span id="line220"></span>		if ( bits &amp; 128 )
+<span id="line221"></span>		{
+<span id="line222"></span>			mu = ( isolevel - value4 ) / ( value6 - value4 );
+<span id="line223"></span>			vlist[7] = points[pz].clone().lerp( points[pyz], mu );
+<span id="line224"></span>		}
+<span id="line225"></span>		// vertical lines of the cube
+<span id="line226"></span>		if ( bits &amp; 256 )
+<span id="line227"></span>		{
+<span id="line228"></span>			mu = ( isolevel - value0 ) / ( value4 - value0 );
+<span id="line229"></span>			vlist[8] = points[p].clone().lerp( points[pz], mu );
+<span id="line230"></span>		}
+<span id="line231"></span>		if ( bits &amp; 512 )
+<span id="line232"></span>		{
+<span id="line233"></span>			mu = ( isolevel - value1 ) / ( value5 - value1 );
+<span id="line234"></span>			vlist[9] = points[px].clone().lerp( points[pxz], mu );
+<span id="line235"></span>		}
+<span id="line236"></span>		if ( bits &amp; 1024 )
+<span id="line237"></span>		{
+<span id="line238"></span>			mu = ( isolevel - value3 ) / ( value7 - value3 );
+<span id="line239"></span>			vlist[10] = points[pxy].clone().lerp( points[pxyz], mu );
+<span id="line240"></span>		}
+<span id="line241"></span>		if ( bits &amp; 2048 )
+<span id="line242"></span>		{
+<span id="line243"></span>			mu = ( isolevel - value2 ) / ( value6 - value2 );
+<span id="line244"></span>			vlist[11] = points[py].clone().lerp( points[pyz], mu );
+<span id="line245"></span>		}
+<span id="line246"></span>		
+<span id="line247"></span>		// construct triangles -- get correct vertices from triTable.
+<span id="line248"></span>		var i = 0;
+<span id="line249"></span>		cubeindex </span><span>&lt;&lt;</span><span></span><span>=</span><span> 4;  // multiply by 16... 
+<span id="line250"></span>		// "Re-purpose cubeindex into an offset into triTable." 
+<span id="line251"></span>		//  since each row really isn't a row.
+<span id="line252"></span>		 
+<span id="line253"></span>		// the while loop should run at most 5 times,
+<span id="line254"></span>		//   since the 16th entry in each row is a -1.
+<span id="line255"></span>		while ( THREE.triTable[ cubeindex + i ] != -1 ) 
+<span id="line256"></span>		{
+<span id="line257"></span>			var index1 = THREE.triTable[cubeindex + i];
+<span id="line258"></span>			var index2 = THREE.triTable[cubeindex + i + 1];
+<span id="line259"></span>			var index3 = THREE.triTable[cubeindex + i + 2];
+<span id="line260"></span>			
+<span id="line261"></span>			geometry.vertices.push( vlist[index1].clone() );
+<span id="line262"></span>			geometry.vertices.push( vlist[index2].clone() );
+<span id="line263"></span>			geometry.vertices.push( vlist[index3].clone() );
+<span id="line264"></span>			var face = new THREE.Face3(vertexIndex, vertexIndex+1, vertexIndex+2);
+<span id="line265"></span>			geometry.faces.push( face );
+<span id="line266"></span>
+<span id="line267"></span>			geometry.faceVertexUvs[ 0 ].push( [ new THREE.Vector2(0,0), new THREE.Vector2(0,1), new THREE.Vector2(1,1) ] );
+<span id="line268"></span>
+<span id="line269"></span>			vertexIndex += 3;
+<span id="line270"></span>			i += 3;
+<span id="line271"></span>		}
+<span id="line272"></span>	}
+<span id="line273"></span>	
+<span id="line274"></span>	geometry.computeCentroids();
+<span id="line275"></span>	geometry.computeFaceNormals();
+<span id="line276"></span>	geometry.computeVertexNormals();
+<span id="line277"></span>	
+<span id="line278"></span>	var colorMaterial =  new THREE.MeshLambertMaterial( {color: 0x0000ff, side: THREE.DoubleSide} );
+<span id="line279"></span>	var mesh = new THREE.Mesh( geometry, colorMaterial );
+<span id="line280"></span>	scene.add(mesh);
+<span id="line281"></span>}
+<span id="line282"></span>
+<span id="line283"></span>function animate() 
+<span id="line284"></span>{
+<span id="line285"></span>    requestAnimationFrame( animate );
+<span id="line286"></span>	render();		
+<span id="line287"></span>	update();
+<span id="line288"></span>}
+<span id="line289"></span>
+<span id="line290"></span>function update()
+<span id="line291"></span>{
+<span id="line292"></span>	controls.update();
+<span id="line293"></span>	stats.update();
+<span id="line294"></span>}
+<span id="line295"></span>
+<span id="line296"></span>function render() 
+<span id="line297"></span>{
+<span id="line298"></span>	renderer.render( scene, camera );
+<span id="line299"></span>}
+<span id="line300"></span>
+<span id="line301"></span></span><span>&lt;/<span class="end-tag">script</span>&gt;</span><span>
+<span id="line302"></span>
+<span id="line303"></span></span><span>&lt;/<span class="end-tag">body</span>&gt;</span><span>
+<span id="line304"></span></span><span>&lt;/<span class="end-tag">html</span>&gt;</span><span>
+<span id="line305"></span></span></pre><menu id="actions" type="context"><menuitem accesskey="l" label="Aller à la ligne…" id="goToLine"></menuitem><menuitem type="checkbox" label="Retour à la ligne automatique" id="wrapLongLines"></menuitem><menuitem checked="true" type="checkbox" label="Coloration syntaxique" id="highlightSyntax"></menuitem></menu></body></html>

@@ -1,0 +1,89 @@
+;; http://rosettacode.org/wiki/Check_Machin-like_formulas
+(require 'math)
+(require 'match)
+(define rcount 0)
+
+(lib 'math)
+(lib 'match)
+(math-precision 1.e-10) 
+
+;; formally derive (tan ..) expressions
+;; copied from Racket 
+;; adapted and improved for performance
+
+(define (reduce e)
+;; (set! rcount (1+ rcount)) ;; # of calls
+  (match e
+    [(? number? a)                         a]
+    [('+ (? number? a) (? number? b)) (+ a b)]
+    [('- (? number? a) (? number? b)) (- a b)]
+    [('- (? number? a))               (- a)]
+    [('* (? number? a) (? number? b)) (* a b)]
+    [('/ (? number? a) (? number? b)) (/ a b)] ; patch
+    
+    [( '+ a b)                         (reduce `(+ ,(reduce a) ,(reduce b)))]
+    [( '- a b)                         (reduce `(- ,(reduce a) ,(reduce b)))]
+    [( '- a)                           (reduce `(- ,(reduce a)))]
+    [( '* a b)                         (reduce `(* ,(reduce a) ,(reduce b)))]
+    [( '/ a b)                         (reduce `(/ ,(reduce a) ,(reduce b)))]
+    
+    [( 'tan ('arctan a))           (reduce a)]
+    [( 'tan ( '- a))               (reduce `(- (tan ,a)))]
+    ;; x 100 # calls reduction : derive (tan ,a) only once
+    [( 'tan ( '+ a b))            (let ((alpha (reduce  `(tan ,a))) (beta (reduce  `(tan ,b))))
+    							  (reduce `(/ (+ ,alpha ,beta) (- 1 (* ,alpha ,beta)))))]
+                                                          
+    [( 'tan ( '+ a b c ...))       (reduce `(tan (+ ,a (+ ,b ,@c))))]
+                                                           
+    [( 'tan ( '- a b))            (let ((alpha (reduce  `(tan ,a))) (beta (reduce  `(tan ,b))))
+    							  (reduce `(/ (- ,alpha ,beta) (+ 1 (* ,alpha ,beta)))))]
+
+	;; add formula for (tan 2 (arctan a)) = 2 a / (1 - a^2))
+    [( 'tan ( '* 2 ('arctan a)))   (reduce `(/ (* 2 ,a) (- 1 (* ,a ,a))))] 
+    [( 'tan ( '* 1 ('arctan a)))   (reduce a)] ; added
+   
+    [( 'tan ( '* (? number? n) a))
+     (cond [(< n 0) (reduce `(- (tan (* ,(- n) ,a))))]
+           [(= n 0) 0]
+           [(= n 1)    (reduce `(tan ,a))]
+           [(even? n)  (let ((alpha (reduce  `(tan (* ,(/ n 2) ,a))))) ;; # calls reduction
+    							    (reduce `(/ (* 2 ,alpha) (- 1 (* ,alpha ,alpha)))))]
+           [else      (reduce `(tan (+ ,a  (* ,(- n 1) ,a))))])]
+    ))
+    
+    
+(define machins
+  '((tan (+ (arctan 1/2) (arctan 1/3)))
+    (tan (+ (* 2 (arctan 1/3)) (arctan 1/7)))
+    (tan (- (* 4 (arctan 1/5)) (arctan 1/239)))
+    (tan (+ (* 5 (arctan 1/7)) (* 2 (arctan 3/79))))
+    (tan (+ (* 5 (arctan 29/278)) (* 7 (arctan 3/79))))
+    (tan (+ (arctan 1/2) (arctan 1/5) (arctan 1/8)))
+    (tan (+ (* 4 (arctan 1/5)) (* -1 (arctan 1/70)) (arctan 1/99)))
+    (tan (+ (* 5 (arctan 1/7)) (* 4 (arctan 1/53)) (* 2 (arctan 1/4443))))
+    (tan (+ (* 6 (arctan 1/8)) (* 2 (arctan 1/57)) (arctan 1/239)))
+    (tan (+ (* 8 (arctan 1/10)) (* -1 (arctan 1/239)) (* -4 (arctan 1/515))))
+    (tan (+ (* 12 (arctan 1/18)) (* 8 (arctan 1/57)) (* -5 (arctan 1/239))))
+    (tan (+ (* 16 (arctan 1/21)) (* 3 (arctan 1/239)) (* 4 (arctan 3/1042))))
+    (tan (+ (* 22 (arctan 1/28)) (* 2 (arctan 1/443)) (* -5 (arctan 1/1393)) (* -10 (arctan 1/11018))))
+    (tan (+ (* 22 (arctan 1/38)) (* 17 (arctan 7/601)) (* 10 (arctan 7/8149))))
+    (tan (+ (* 44 (arctan 1/57)) (* 7 (arctan 1/239)) (* -12 (arctan 1/682)) (* 24 (arctan 1/12943))))
+    (tan (+ (* 88 (arctan 1/172)) (* 51 (arctan 1/239)) (* 32 (arctan 1/682)) 
+            (* 44 (arctan 1/5357)) (* 68 (arctan 1/12943))))
+    (tan (+ (* 88 (arctan 1/172)) (* 51 (arctan 1/239)) (* 32 (arctan 1/682)) 
+           (* 44 (arctan 1/5357)) (* 68 (arctan 1/12944))))))
+ 
+
+(define (task)
+	(for ((f machins))
+	(if (~= 1 (reduce f))
+		(writeln '👍 f  '⟾ 1 )
+		(writeln '❌ f '➽ (reduce f) ))))
+	
+	
+(math-precision 1.e-10)
+
+
+
+
+    

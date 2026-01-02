@@ -1,0 +1,56 @@
+;; http://rosettacode.org/wiki/Constrained_random_points_on_a_circle
+
+(lib 'math)
+(lib 'plot)
+
+(define (points (n 100) (radius 10) (rmin 10) (rmax 15)   (x) (y))
+	(plot-clear)
+	(plot-x-minmax (- rmax))
+	(plot-y-minmax( - rmax))
+	
+	(for [(i n)]
+	(set! x (round (* (random -1) rmax)))
+	(set! y (round (* (random -1) rmax)))
+	#:when (in-interval? (pythagore x y) rmin rmax)
+	;; add a little bit of randomness : dots color and radius
+	(plot-fill-color   (hsv->rgb (random) 0.9 0.9))
+	(plot-circle x y (random radius)))
+	(plot-edit))
+	
+; (ppoints 8 300)
+; primes
+(define (ppoints  (radius 8)  (rmax 300))
+	(plot-clear)
+	(plot-x-minmax (- rmax))
+	(plot-y-minmax( - rmax))
+	
+	(for* [(x (in-range (- rmax) rmax))  (y (in-range (- rmax) rmax))]
+	#:continue (not (prime? x))
+	#:continue (not (prime? y))
+	;; add a little bit of randomness : dots color and radius
+	(plot-fill-color   (hsva->rgb (random) 0.9 0.9  (random)))
+	;;(plot-square x y (random radius)))
+	(plot-rect x y (+ x (random radius)) (+ y (random radius))))
+	(plot-edit))
+	
+(define fibs '( 1  2  3  5  8  13  21  34  55  89  144  233  377  610  987  1597  2584  4181  6765  10946  17711  28657  46368  75025  121393  196418  317811  514229))
+
+;; (fpoints 50 100)
+(define (fpoints  (radius 8)  (rmax 300))
+	(plot-clear)
+	(plot-x-minmax (- rmax))
+	(plot-y-minmax (- rmax))
+	
+	(for* [(x (in-range (- rmax) rmax))  (y (in-range (- rmax) rmax))]
+	#:continue (not (memq (abs x) fibs))
+	#:continue (not (memq (abs y) fibs))
+	;; add a little bit of randomness : dots color and radius
+	(plot-fill-color   (hsva->rgb (random) 0.95 0.95  (+ 0.5 (random 0.5))))
+	; (plot-square x y (random radius)))
+	; (plot-rect x y (+ x (random radius)) (+ y (random radius))))
+	(plot-circle x y (random radius)))
+	(plot-edit))
+	
+	
+
+	 

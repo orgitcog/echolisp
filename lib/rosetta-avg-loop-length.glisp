@@ -1,0 +1,59 @@
+;; http://rosettacode.org/wiki/Average_loop_length
+
+
+(lib 'math) ;; Σ aka (sigma f(n)  nfrom nto)
+    
+(define (f-count  N (times 100000))
+    (define count 0)
+    (for ((i times))
+    
+    ;; new  random f mapping from  0..N-1 to 0..N-1 
+    ;; (f n) is NOT (random N) 
+    ;; because each call (f n) must return the same value
+    
+    (define f (build-vector N  (lambda(i) (random N))))
+    
+    (define hits (make-vector N))
+        (define n 0)
+        (while (zero? [hits n])
+            (++ count)
+            (vector+= hits n 1)
+            (set! n [f n])))
+    (// count times))
+    
+(define (f-anal N)
+    (Σ  (lambda(i) (// (! N) (! (- N i)) (^  N i))) 1 N))
+    
+(decimals 5)
+(define (f-print (maxN 21))
+	(for ((N (in-range 1 maxN)))
+	(define fc (f-count N))
+	(define fa (f-anal N))
+	(printf  "%3d %10d %10d  %10.2d %%" N fc fa (// (abs (- fa fc)) fc 0.01))))
+		
+	
+{{out}}
+<pre>
+(f-print)
+  1          1          1          0 %
+  2    1.49908        1.5       0.06 %
+  3    1.89059    1.88889       0.09 %
+  4    2.21709    2.21875       0.07 %
+  5    2.50629     2.5104       0.16 %
+  6    2.77027    2.77469       0.16 %
+  7    3.01739    3.01814       0.02 %
+  8    3.23934    3.24502       0.18 %
+  9    3.45862    3.45832       0.01 %
+ 10    3.65959    3.66022       0.02 %
+ 11    3.85897    3.85237       0.17 %
+ 12    4.04188    4.03607       0.14 %
+ 13    4.21226    4.21235          0 %
+ 14    4.38021    4.38203       0.04 %
+ 15    4.54158    4.54581       0.09 %
+ 16    4.70633    4.70426       0.04 %
+ 17    4.86109    4.85787       0.07 %
+ 18    4.99903    5.00706       0.16 %
+ 19    5.15873     5.1522       0.13 %
+ 20    5.30243    5.29358       0.17 %
+ </pre>
+ 

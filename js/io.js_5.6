@@ -1,0 +1,1157 @@
+/*
+GLisp
+
+	I/O functions
+	version 2.4.11
+*/
+
+
+
+// __tab_line
+// replaces "\t" by 'tab' white spaces
+
+function __tab_line(line,tab) {
+tab = tab || 8 ;
+	var i,words,word;
+	var words = line.split("\t");
+	if(words.length === 1) return line;
+	for (i=0;i<words.length-1;i++) {
+		word = words[i];
+		while(word.length % tab !== 0) word += " ";
+		word = word.replace(/\ /g,"&nbsp;");
+		words[i] = word ;
+		}
+	return words.join("&nbsp;");
+	}
+
+/*----------------
+info field
+----------------------*/
+
+function redinfo (txt) {
+info ('<span style="color:red;">' + txt + "</span>");
+}
+
+function info(txt) {
+var elem = document.getElementById("info");
+if(elem) elem.innerHTML = txt;
+}
+
+/*----------------------
+printer & tty echo on/off
+------------------------*/
+var _printer_clear = function () {
+	GPrinter.clear();
+	return __void;
+}
+
+var _printer_page = function (top,argc) {
+var title = (argc === 0)  ? undefined :  '' + _stack[top] ;
+	GPrinter.newpage(title);
+	return __void;
+}
+
+var _printer_font = function (top,argc) {
+	if(argc === 0) return GPrinter.font();
+	var font = nameToString(_stack[top]);
+	GPrinter.font(font);
+	return font;
+}
+
+var _printer_echo = function (what) {
+	if(what === _false) _UI.printer_echo =false;
+	else _UI.printer_echo = true;
+return _UI.printer_echo ? _true : _false; 
+}
+var _tty_echo = function (what) {
+	if(what === _false) _UI.tty_echo = false;
+	else _UI.tty_echo = true;
+return _UI.tty_echo ? _true : _false; 
+}
+var _doc = function (what) {
+	glisp.doc = (what === _true) ? true: false ;
+	 _UI.tty_echo = ! what;
+	return what;
+}
+
+
+
+// (read [default [prompt]])
+var _read = function (top, argc) {
+	var strdef = (argc > 0) ?    glisp_message(_stack[top++],"") : "0" ;
+	var strprompt = (argc > 1) ? glisp_message(_stack[top],"") : "EchoLisp:read" ;
+
+	var line = prompt(strprompt,strdef) ;  
+	var form = (line) ? glisp_read(line) : null ;
+	return form? form[1][0] : _false; // skip (values ..)
+}
+var _string_read = function (top, argc) {
+	var strdef = (argc > 0) ?    glisp_message(_stack[top++],"") : "0" ;
+	var strprompt = (argc > 1) ? glisp_message(_stack[top],"") : "EchoLisp:read-string" ;
+	
+	var line = prompt(strprompt,strdef) ;  
+	return (line) ? line : _false ;
+}
+
+/////////////////////////
+// INPUT OUTPUT
+/////////////////////////////
+var _newline = function () {
+	stdout_flush('');
+	return __void;
+}
+
+
+var _string_delimiter = function (top,argc) {
+	if(argc === 0) return _STRING_DELIMITER ;
+	_STRING_DELIMITER = nameToString(_stack[top]);
+	// if(delim.lengtht === 1) delim = "\\" + delim ; // protect ?? NYI
+	return _STRING_DELIMITER ;
+}
+
+var _writeln = function(top,argc) { // (writeln) -> flush
+var outline ='' ;
+	for(var i=0;i<argc;i++) 
+			outline += glisp_tostring(_stack[top+i],'') + _TAB ;
+	stdout_flush(outline); // and GPrinter
+	return __void;
+}
+
+var _write = function(top,argc) { // accumulates
+	for(var i=0;i<argc;i++) stdout_cat (glisp_tostring(_stack[top+i],'')) ;
+	return __void;
+}
+
+var _display = function(top,argc) { 
+//console.log("_write",top,argc,_stack[top],_stack[top+1]);
+	var obj = _stack[top++];
+	var style = (argc === 2) ? nameToString (_stack[top]) : undefined ;
+	var outline = glisp_message(obj,'') ;
+	writeln(outline,style);
+	GPrinter.write(outline); 
+	return __void;
+}
+
+// directives : %[szx[.szy]]D|v|...
+// returnds [op,szx,szy, length]
+
+
+function fmt_directive (fmt) {
+	var re = /^.([0-9]+)\.([0-9]+)(.)/ ;
+	var an = re.exec(fmt) ;
+	if(an) return [an[3], an[1],an[2], an[0].length] ;
+	re = /^.\.([0-9]+)(.)/ ;
+	an = re.exec(fmt) ;
+	if(an) return [an[2],"0",an[1],an[0].length];
+	re = /^.([0-9]+)(.)/ ;
+	an = re.exec(fmt);
+	if(an) return [an[2],an[1],"0",an[0].length];
+	return [fmt.substring(1,2) ,"0","0",2] ;
+}
+
+var _format = function(top, argc) { // output : string (spaces = &nbsp;)
+	var str =  [ "a","A","s","S","v","V" ];
+	var dec =  [ "d","D" ];
+	var nl =   [ "n"  ];
+	var hexa = [ "x", "X" ];
+	var tab =  [ "t", "T"]; // %32t is OK
+	var nop =  ["~" ,"%"];
+	
+	var fmt = _stack[top++]; 
+	var strings= [] ; // to join
+	var next, altnext ;
+	var op , szx , szy ,tab_length = 0 ;
+	var stop = top + argc  ;
+	var toFormat, _S_DECIMALS = _DECIMALS;
+	if(typeof fmt !== "string") return glisp_error(41,fmt,"format");
+	
+		while(fmt.length && top < stop) {
+			next = fmt.indexOf("~");
+			altnext = fmt.indexOf("%");
+			if(next === -1) next = altnext ;
+			else  if (altnext >= 0) next = Math.min(next,altnext) ;
+			if(next === -1) {strings.push(fmt); break;}
+			strings.push(fmt.substring(0,next));
+			
+			fmt = fmt.substring(next); // fmt-> %xxD here
+//console.log("fmt>",fmt);
+			direct = fmt_directive(fmt) ;  // -> [op,szx,szy,dlg]
+			op = direct[0]; 
+			szx = parseInt(direct[1]); // or 0
+			szy = parseInt(direct[2]);
+			fmt = fmt.substring(direct[3]); // 2 for %V, 4 for %45D
+			
+//console.log("> op",op,"szx",szx,"szy",szy,"fmt",fmt);
+			
+		if(nop.indexOf(op) >= 0) // %%
+			strings.push(op) ;
+		else if (nl.indexOf(op) >= 0)
+			strings.push("\\n") ; // format to stdout
+		else if (tab.indexOf(op) >= 0) {
+			tab_length = szx || tab_length ; // lasts wins
+			strings.push("\t") ; // format to tab_line
+			}
+		else if(hexa.indexOf(op)>=0) { 
+			toFormat = _stack[top++] ;
+			toFormat = __number_to_string(toFormat,16) ;
+			if(szx) toFormat = _string_pad_left(toFormat,szx);
+			strings.push(toFormat); // no chek here NYI
+			}
+		else {
+				toFormat = _stack[top++] ;
+				if(szy) _DECIMALS = szy;
+			if(str.indexOf(op) >= 0) 
+				toFormat = glisp_message(toFormat); // no colors, nor "
+			else if(dec.indexOf(op)>=0)  
+				toFormat = glisp_message(toFormat);
+			else {
+				glisp_error(10,op,"format"); // warning
+				toFormat = glisp_message(toFormat);
+				 }
+			 if(szx) toFormat = _string_pad_left(toFormat,szx);
+			 	_DECIMALS = _S_DECIMALS ;
+			 	strings.push(toFormat);
+			 } // obj to format
+		} // while
+	return __tab_line(strings.join(""),tab_length || 16);
+}
+
+var _printf = function(top, argc) {
+var outline,delim = _STRING_DELIMITER ;
+	_STRING_DELIMITER = "";
+	var outline = _format(top, argc) ;
+	_STRING_DELIMITER = delim;
+	writeln(outline);
+	GPrinter.write(outline);
+	return __void;
+}
+
+var _decimals = function (top,argc) {
+	if(argc === 0) return _DECIMALS;
+	_DECIMALS = Math.floor (0 + _stack[top]);
+	if(_DECIMALS < 0 || _DECIMALS > 18) _DECIMALS = 0 ;
+	return _DECIMALS ;
+}
+
+function __number_to_string  (n,b) {
+	if( b > 36) glisp_error(24,b,"number->string (base <= 36)");
+var header =
+		(b === 10) ? '' : (b === 16) ? '0x' : '|'+b+'|' ;
+	if(typeof n === "number") return header+n.toString(b);
+	if(n instanceof Integer)  return header+n.toString(b);
+	if(isRational(n)) return header+rationalToString(n,b);
+	// complex NYI
+	return glisp_tostring(n,'');
+}
+
+var _number_to_string = function (top, argc) {
+var n = _stack[top++];
+var b = (argc > 1) ? _stack[top] : 10 ;
+	return __number_to_string(n,b);
+}
+
+var _string_pad_right = function (obj , length) {
+	var str =  glisp_message(obj,''); // will include span directive if styled ....
+	var slen = str.length;
+	while(slen < length) {slen++; str += '&nbsp;';}
+	return str;
+}
+var _string_pad_left = function (obj , length) {
+	var str =  glisp_message(obj,'');
+	var slen = str.length;
+	while(slen < length) {slen++; str = '&nbsp;' + str;}
+	return str;
+}
+
+
+/*-------------------------
+ jsonify :
+ NYI : shared lists will not be shared ....
+ NYI : circular lists
+ circular : https://github.com/douglascrockford/JSON-js/blob/master/cycle.js
+---------*/
+function MetaStruct(name) {this.name = name; } // OVERRIDDEN BY LIB
+function Struct(meta) {this.meta = meta; } // OVERRIDDEN BY LIB
+
+/*
+JSObject class - need to encapsulate raw javascript objects
+USED BY json.lib
+*/
+function JSObject ( obj) {
+	this.obj = obj ;
+}
+JSObject.prototype.toString = function () {
+	return "#[jsObject]" ;
+	}
+	
+// from a glisp list  to js object
+function __lisp_pair_to_json_object (pair)
+ {
+    var array = [__lisp_to_json (pair[0] , "pair->json"),__lisp_to_json (pair[1] , "pair->json")] ;
+ 	return { _instanceof : "Pair" , array : array } ;
+ }
+function __lisp_list_to_json_object (lst)
+ {
+ 	var array=[] ;
+ 	while(lst) {
+ 			array.push(__lisp_to_json (lst[0] , "list->json"));
+ 			lst = lst[1];
+ 			}
+ 	return { _instanceof : "List" , array : array } ;
+ }
+ 
+ function __lisp_array_to_json_array (array)
+ {
+ 	var clone = array.slice(0), i;
+ 	for(i=0; i<clone.length;i++) clone[i] = __lisp_to_json(array[i],"lisp:array->json") ;
+ 	return clone;
+ }
+ 
+ function __json_array_to_lisp_array (array)
+ {
+// console.log("<json-array-to-lisp-array",array);
+ 	var clone = array.slice(0), i;
+ 	for(i=0; i<clone.length;i++) clone[i] = __json_to_lisp(array[i],"json:array->lisp") ;
+// console.log(">json-array-to-lisp-array",clone);
+ 	return clone;
+ }
+ 
+ // json array to list (ordered)
+ // LOOOOOOOOONG NYI NYI
+function __json_array_to_list (anArray, idx) { // at depth === 0
+		if(idx === undefined) idx = 0;
+		if(idx >= anArray.length) return null;
+		return [
+			 __json_to_lisp(anArray[idx],"json->list") ,
+			  __json_array_to_list(anArray,idx+1)] ;
+	} 
+function __json_array_to_pair (anArray) {
+	return  [__json_to_lisp(anArray[0],"json->list") , __json_to_lisp(anArray[1],"json->list")] ;
+}
+ 
+// convert echolisp simple objects to json data types
+// we need this for (json-put JSObject key val)
+// plists need a special converter = JSObject-new
+
+function __lisp_to_json (obj , sender , _instanceof) {
+// console.log("LISP->JSON", obj, sender) ;
+// standard JSON
+	if(obj === undefined) glisp_error(90,sender,"lisp->json");
+	if((typeof obj === "number") ||(typeof obj === "string")) return obj;
+	if (obj === _true ) return  true;
+	if (obj === _false ) return false;
+	if (obj === null ) return null; // ???
+	if(obj instanceof Vector) return __lisp_array_to_json_array(obj.vector); 
+	if(obj instanceof JSObject) return obj.obj;
+	
+// special EchoLisp
+	// obj is [ name , def] (strings)
+	
+// general EchoLisp
+	if(isTruePair(obj)) return __lisp_pair_to_json_object (obj); 
+	if(Array.isArray(obj)) return __lisp_list_to_json_object (obj);
+	if(obj instanceof Definition)  
+			return    {_instanceof : "Definition" , name:obj.name, def : obj.def};
+	if(obj instanceof Date)  return    {_instanceof : "Date" , date : obj.toJSON()};
+	if(obj instanceof Rational) return { _instanceof : "Rational" , a : obj.a , b : obj.b } ;
+	if(obj instanceof Complex) return  { _instanceof : "Complex" , a : obj.a , b : obj.b } ;
+	if(obj instanceof Integer)    return   { _instanceof : "Integer" , bigint : obj.bigint} ;
+	if(obj instanceof Symbol) return   { _instanceof  : "Symbol" , name : obj.name } ;
+	if(obj instanceof MetaStruct)	  return   obj.jsonify(); // obj makes the job
+	if(obj instanceof Struct)		  return   obj.jsonify();
+	if(typeof obj === "function") 	return   { _instanceof  : "Function" , name : obj.glfun.name } ;
+
+	glisp_error(89,obj, sender || "lisp->json"); // cannot translate
+}
+
+
+
+// convert json raw data  and typed (List,..) objects to echolisp objects 
+// needed for json-get
+
+function __json_to_lisp  ( obj , sender)  { 
+var _instanceof ;
+// standard JSON
+	if(obj === undefined) glisp_error(90,sender,"json->lisp");
+	if(typeof obj === "number" || typeof obj === "string") return obj;
+	if (obj === true ) return _true;
+	if (obj === false ) return _false;
+	if (obj === null ) return null; // ???
+	if(Array.isArray(obj)) return new Vector(__json_array_to_lisp_array(obj)); // need to translate
+// special EchoLisp
+	if(obj instanceof Date) return obj;
+	if(obj instanceof Object) {
+				_instanceof = obj._instanceof;
+				if(_instanceof === undefined) return new JSObject(obj) ;
+
+				switch (_instanceof) {
+					case "Definition" : return new Definition (obj.name,obj.def);
+				    case "Pair" :  return __json_array_to_pair (obj.array) ;
+					case "Rational" : return new Rational (obj.a,obj.b);
+					case "Complex" : return new Complex (obj.a,obj.b);
+					case "Integer" : return new Integer (obj.bigint);
+					case "Symbol" : return new Symbol (obj.name);
+					case "List" : return __json_array_to_list (obj.array) ;
+					case "Date" : return new Date (obj.date);
+					case "MetaStruct" : return MetaStruct.unjsonify(obj) ;
+					case "Struct" : return Struct.unjsonify(obj);
+					case "Function" : return glisp_look_sysfun(obj.name)
+					default : glisp_error(89,_instanceof,"json->lisp:object");
+					}
+				}
+	glisp_error(89,obj,sender || "json->lisp");
+	}
+	
+function glisp_jsonify(obj, _instanceof /* undef or special ttype: Definition .. */) {
+	return __lisp_to_json(obj,"save-obj",_instanceof);
+	}
+	
+// unjsonify (obj)
+// chirurgy
+function glisp_unjsonify(obj) {
+	return __json_to_lisp(obj, "restore-obj") ;
+	}
+	
+/*------------------------
+Directory operations
+* dir format : [FILE,FILE, ..]
+* __dir_add(key,name,type)
+* (dir) -> print dir
+* ls: -rw user  9275204 Jun 13 15:27 name
+-----------------------*/
+var _Files = [] ; // list of Files objects
+function File (name,key,type,visible,date) {
+	this.name = name;	
+	this.key = key;
+	this.type = type;
+	this.visible= visible;
+	this.user = "user" ;
+	this.perm = "rw" ;
+	if(date) this.date = date ;
+			 else this.date = Date.now();  
+	}
+File.prototype.length = function () { return localStorage.getItem(this.key).length ;}
+File.prototype.toString = function() {
+				var _tab = "\t";
+				return __tab_line("- " + this.perm + _tab + this.name + _tab + 
+				this.length() + _tab + _date_to_string(new Date(this.date)) + _tab + this.type);
+				}
+
+function __dir_load () { // --> _FILES array of File
+	var f, obj , files , file ;
+	_Files = [];
+	files =   JSON.parse(localStorage.getItem("GLISP-FILES"));
+	if(! files) return;
+	for (f= 0; f < files.length ; f++) {
+		obj = files[f];
+		if(! obj) continue;
+		if(! localStorage[obj.key]) continue; // null or bogue
+		file = new File(obj.name,obj.key,obj.type,obj.visible,obj.date) ;
+		_Files.push(file);
+		}
+	}
+	
+function __dir_rem(key) {
+var fidx;
+	__dir_load();
+	fidx = __dir_index(key);
+	if (fidx > -1) 
+    	_Files.splice(fidx, 1);
+    __dir_save();
+}
+	
+
+function __dir_save () { //  _FILES array -> JSon
+	localStorage.setItem("GLISP-FILES",JSON.stringify(_Files));
+	}
+
+function __dir_add(key,name,type,visible) {
+	var fidx, file ;
+	__dir_load() ;
+	fidx = __dir_index(key);
+	file = new File(name,key,type,visible,false) ; // new date
+	if(fidx === -1) 
+			_Files.push(file);
+			else _Files[fidx] = file;
+	__dir_save();
+}
+
+ // assumes dir loaded
+function __dir_index(key) {
+		name = nameToString(name);
+		for(var f= 0; f < _Files.length; f++) 
+			if(_Files[f].key === key) return f;
+		return -1;
+}
+
+// return #f or a file object
+// NYI : same name files
+function _filep(name) { 
+		name = nameToString(name);
+		__dir_load() ;
+		for(var f= 0; f < _Files.length; f++) 
+			if(_Files[f].name === name && _Files[f].visible ) return _Files[f] ;
+		return _false;
+}
+
+function _dir () { // -> print
+	__dir_load();
+	GPrinter.newpage("Directory") ;
+	for(var f= 0; f < _Files.length; f++) {
+	if(!_Files[f].visible) continue;
+		writeln(_Files[f].toString(), 
+			"font-family:Courier New,Courier,monospace;" + _STYLE.plist["store"]);
+			GPrinter.write(_Files[f].toString());
+			}
+	GPrinter.newpage();
+	return __void;
+}
+
+/*--------------
+saving objects
+save p-lists 
+--------------------*/
+function nameToString(obj,sender) { // anything possible --> string
+	if(typeof obj === "string") return obj;
+	if(obj instanceof Symbol) return obj.name;
+	if(typeof obj === "function") return obj.glfun.name ;
+	glisp_error(54,obj, (sender) ? sender : "name->string");
+}
+var toNameString = nameToString ; // OLD compat
+
+/*
+var _remove_local = function(name) {
+	var key ;
+	name = nameToString(name,"remove-local");
+	
+	if(name === "user") {
+			writeln("Cannot remove /user/","color:orange");
+			return _false;
+			}
+	if(name.indexOf("*") > -1) {
+		if (! window.confirm ("EchoLisp\nRemove " + name + " from local storage?"))
+		return _false;
+	}
+	if(localStorage.getItem("GLISP-DEFS-" + name)){
+		if (! window.confirm ("EchoLisp\nRemove package /" + name + "/ from local storage?"))
+		return _false;
+		localStorage.removeItem("GLISP-DEFS-" + name);
+		__dir_rem("GLISP-DEFS-" + name);
+		return _true;
+	}
+
+	localStorage.removeItem("GLISP-SYMB-" +name);
+	localStorage.removeItem("GLISP-SYMB-PLIST-" +name);
+	__dir_rem("GLISP-SYMB-" +name);
+	__dir_rem("GLISP-SYMB-PLIST-" +name);
+	
+	return _true;
+}
+
+var _save_local = function(symb) { // no env
+var name, value, plist, type = "data" ;
+	if(! symb instanceof Symbol) glisp_error(35,obj,"save");
+	name = symb.name ;
+	value =  glisp.user.get (name) ;
+	if(value === undefined)  glisp_error(17,symb,"save");
+	value = glisp_jsonify(value);
+	value = JSON.stringify(value) ;
+	localStorage.setItem("GLISP-SYMB-" +name, value);
+	__dir_add("GLISP-SYMB-" +name,name,type,true); 
+
+// save its plist itou
+	value = _symbol_plist(symb);
+	if(value) {
+		value = glisp_jsonify(value);
+		value = JSON.stringify(value) ;
+
+		localStorage.setItem("GLISP-SYMB-PLIST-" +name, value);
+		__dir_add("GLISP-SYMB-PLIST-" +name,name,"plist",false); // not visible
+	}
+	
+return symb;
+}
+
+/*
+// restore a value in glisp.user space by default
+var _load_local = function(name,space,mute) { // (load 'name)
+var symb,value;
+space = space || glisp.user;
+name = nameToString(name);
+	
+	_reader_rem_proc(true); // standard reader
+	value= localStorage.getItem("GLISP-SYMB-" + name);
+	if(!value) {
+			 if(mute) return null;
+			 glisp_error(36,name,"load") ; // unknown symb
+	 		 }
+//console.log("load 1",name,value);
+	value = JSON.parse(value);
+//console.log("load 2",name,value);
+	value = glisp_unjsonify(value);
+//console.log("load 3",name,value);
+	symb = new Symbol(name); // nopish if exists
+	space.set(name,value);
+	
+	value= localStorage.getItem("GLISP-SYMB-PLIST-" + name);
+	if(value) {
+		value = JSON.parse(value);
+		value = glisp_unjsonify(value);
+		_set_plist(symb,value);
+	}
+
+// writeln(symb.name + " " + (_getprop(symb,"info")  || "" ), _STYLE.plist["store"]);;
+return symb;
+}
+*/
+
+/*---------------------
+((key value) ...)
+depth = 0 
+---------------------*/
+
+// could use Object.keys && isEnumerable = not function
+// input a JS OBJECT {[key] = lisp-type}  (plist, env.alist,  reader-dictionary,etc..)
+// used to get symbol.plist in list form
+// returns list
+
+var _prop_val_to_list = function (obj) { 
+var lst = [] , val;
+	for(var key in obj)
+		 if (obj.hasOwnProperty(key)) {
+		 	val = obj[key];
+		 	lst.push([key , [ val , null]]) ;
+		 	}
+	return __array_to_list(lst);
+}
+
+// stringifies values by default
+// list ((key value) (key value))  to JSOBJECT[key] = lisp-type
+// used to set symbol.plist in jsobject form
+// returns { } object
+
+var _list_to_prop_val = function(list, nostring)  {
+var obj = {} , entry ;
+	while(list) { 
+		entry = list[0];
+		if( notIsList(entry)) glisp_error(20,entry,"property-list");
+		if(nostring) 
+				obj[entry[0]] =  entry[1][0] ;
+				else
+				obj[entry[0]] = '' + entry[1][0] ;
+		list = list[1];
+		}
+	return obj;
+}
+
+
+/*----------------------
+saving reader dictionnary
+-----------------------*/
+var _save_reader_dict = function (fname) {
+var value;
+	fname = nameToString(fname);
+	__local_put(fname,_READER_DICTIONNARY,"reader");
+	return fname;
+}
+
+/*--------------------------
+restore reader dict
+---------------------*/
+var _restore_reader_dict = function (fname) {
+var dico ;
+	fname = nameToString(fname);
+	_READER_DICTIONNARY  = { };
+	dico = __local_get(fname,"reader");
+	if(!dico)  glisp_error(36,fname,"reader:restore-dictionnary") ; // unknown symb
+	_READER_DICTIONNARY  = dico ;
+	return _prop_val_to_list (_READER_DICTIONNARY);
+}
+
+/*------------------------------------
+Definitions
+----------------------------------*/
+function Definition (name,def) {
+	this.name = name; // qualified by save
+	this.def = def; // string
+}
+
+Definition.prototype.toString = function () {
+	var def = this.def;
+	if(def === null) return this.name + " : " + 'undefined' ;
+	var cut = def.indexOf("\n");
+	var abbrev = (cut === -1) ? def : def.substring(0,cut) + " [...])" ;
+	return  this.name + " : " + abbrev;
+}
+
+/*------------------------------
+ save definition
+ (save 'key)
+ save new or modified defs : (no package) or defs in same pack
+ save format is [[name define-string] [name define-string] ....]
+
+ SAVE only in pack : skey or pack = null 
+ do not save undef or bound to null (_undefined) NYI
+----------------------------------*/
+
+///////////////
+// find a def from a symbol
+// returns null of a Definition instance
+// Definition.name is full qualified name
+//////////////////
+function glisp_find_def(symb) {
+	var defs = glisp.defs ;
+	for(var i= 0; i < defs.length; i++)
+		if(defs[i].name === symb.name) return  defs[i] ;
+	for(var i= 0; i < defs.length; i++)
+		if(simpleName(defs[i].name) === symb.name) return defs[i];
+return null ;
+}
+
+///////////////
+// push_def: remember definitions (ordered)
+// defs := [[name,line] [name,line] ..]
+////////////////
+function glisp_push_def(symb, line) { // line may be === null : (undefine 'foo)
+	var aDefinition  = glisp_find_def (symb);
+	if(aDefinition)  // override or clear
+			aDefinition.def = line;
+	else if(line)
+	glisp.defs.push( new Definition (symb.name,line)) ;
+	else return;
+	
+	console.log ("Push def:", glisp_find_def(symb).toString()) ;
+	// auto save
+//	if(symb.name === "preferences" || symb.name === "user.preferences") 
+//		__save_definition( "user",glisp.user,symb.name) ;
+}
+
+
+var _save_definitions = function( fname ,env , filter) { // env param NYI to check bound symbs
+return _false;
+}
+/*
+fname = nameToString(fname);
+fname = simpleName(fname) ; // warning in doc: no "." in pack name NYI
+	var toSave = [] ;
+	var defs = glisp.defs ;
+	
+	for(var i= 0; i < defs.length; i++) { // patch defs[0] in memory with qualified name
+			var adef = defs[i];
+			var name = adef[0];
+			if(!adef[1]) continue; // undefined
+			if(filter && filter !== name) continue;
+			// save ALL or only (new + same.pack) ?? option: save all in new pack ..
+			// if(packName(name)  && packName(name) !== fname) continue;
+			if(packName(name) === null) adef[0] = fname + "." + name ;
+			if(adef[0].indexOf("preferences") === -1)
+					writeln("save-def " + adef[0],_STYLE.plist["store"]);
+			toSave.push(adef);
+	}
+	if(toSave.length === 0) return _false;
+	
+	var jarray = JSON.stringify(toSave) ;
+	localStorage.setItem("GLISP-DEFS-" + fname, jarray);	
+	__dir_add("GLISP-DEFS-" +fname, fname, "defs",true); 
+
+return fname; // toSave.length ;
+}
+*/
+
+/*--------------------
+preferences & calendar
+-----------------*/
+function glisp_preferences() { // import 'user' package
+var prefs ; // user function
+// console.log("preferences->",glisp);
+	if (_import_definitions("user",glisp.user,true)) {
+		prefs = glisp_look_symbol ("preferences");
+		if(prefs === null || ! prefs.fval) return;
+		__funcall([prefs, null],glisp.user);
+		}
+}
+
+///////////////////
+// import definitions
+// above existings defs
+////////////////////////
+
+// aDefinition = { name , def} strings
+function __compile_db_definition (aDefinition , packname) {
+var symb;
+	if(aDefinition.def === null) return;
+	symb = new Symbol(aDefinition.name);
+	// dangerous transient state - check glisp_error resets glisp.pack NYI
+	//glisp.pack = packname; // look for symbols in this package - see new Symbol()
+	glisp_rep(aDefinition.def,true);  // batch read-eval-print
+	//glisp.pack = null;
+	if(glisp.error === 0) 
+		glisp_push_def(symb,aDefinition.def); // replace or append	
+	}
+
+// fname = pack name
+/*
+var _import_definitions = function(fname,env,mute) {
+fname = nameToString(fname); // -> string
+fname = simpleName(fname);
+var adef, symb;
+_reader_rem_proc(true); // standard reader
+	var jarray = localStorage.getItem("GLISP-DEFS-" + fname);
+	if(mute && !jarray) return null;
+	if(!jarray) return glisp_error(37,fname,"import-definitions") ; // unknown key
+
+	jarray = JSON.parse(jarray);
+	var nums = jarray.length ;
+	// creates symbols for this package
+		for(var i = 0; i < nums ; i++)  { // scan (name value) a-list
+		adef = jarray[i];
+		if(adef[1] === null) continue;
+		new Symbol(adef[0]);
+// console.log("_import_create_",adef[0]);
+		}
+
+	// compile definitions
+	try {
+		for(var i = 0; i < nums ; i++)  {// scan (name value) a-list
+			var adef = jarray[i];
+			__compile_db_definition(adef, fname);
+			/--
+			if(adef[1] === null) continue;
+			symb = new Symbol(adef[0]);
+			glisp.pack = fname; // look for symbols in this package - see new Symbol()
+			glisp_rep(adef[1],true);  // batch read-eval-print
+			glisp.pack = null;
+			if(glisp.error === 0) 
+				glisp_push_def(symb,adef[1]); // replace or append	
+			--/
+		}  // def loop
+		}
+		catch (err) {glisp.pack = null; throw(err);}
+		
+		if(!mute) _definitions(env) ;
+// writeln(glisp_tostring(_environment_bindings(env) ,fname + " --> ") ,  _STYLE.plist["store"]) ;
+return fname ; 
+}
+*/
+
+var _definitions = function(env) { // show the Definitions'a array , as is 
+env = env || glisp.user;
+	var defs = glisp.defs;
+	var line,name,symb,def;
+	for(var i = 0; i < defs.length; i++) {
+		name = defs[i].name ;
+		/* CHECK NYI
+		symb = glisp_look_symbol(name) ;
+		if(symb === null) continue;
+		*/
+		def = defs[i].def  ; 
+		// if(!def) continue; // undefined : show it
+		writeln(defs[i].toString() , _STYLE.plist["store"]);
+		line = name  + " : " + def ; // NO abbrev
+		GPrinter.write(line); 
+	}
+	return glisp.defs.length;
+} // definitions
+
+////////////////
+// EDITING
+//////////////////
+var _edit = function (symb, env) {
+		if(! isSymbol(symb)) return glisp_error(35,symb,"edit") ;
+		var aDefinition = glisp_find_def(symb);
+		if( aDefinition === null ) return glisp_error (36,symb,"edit");
+		var line = aDefinition.def ;
+		stdin_put(line);
+		return symb;
+}
+
+///////////////////////
+// STDIN/OUT functions
+/////////////////////
+var _style = function (top, argc)
+	{
+	if(argc === 0) return _symbol_plist(_STYLE) ;
+	var obj = _stack[top++] ;
+	var name = nameToString(obj);
+	if(argc === 1) return _STYLE.plist[name] || "undefined" ;
+	var style = nameToString(_stack[top]) ;
+	if(style.indexOf(":") === -1) glisp_error(78,style,"style");
+	_STYLE.plist[name] = style ;
+	return obj;
+	}
+	
+var _tty_lines = function (top,argc) {
+	if(argc === 0) return sysout.maxlines ;
+	return _stdout_lines(_stack[top]);
+}
+
+// sysout.height = 0 at boot time NYI NYI
+// sets height = function(lines)
+var _stdout_lines = function(nlines) { // (tty-lines nn)  change # of lines, hence height
+	if(typeof nlines !== "number") glisp_error(61,nlines,"tty-lines");
+	nlines = Math.floor(nlines);
+	if(!nlines || isNaN(nlines) || nlines < 4 || nlines > 127) 
+			glisp_error(24,nlines,"tty-lines");  // bad range
+			
+	var LH =  parseFloat(window.getComputedStyle(stdout).lineHeight) ;
+	// LH = Math.floor(LH);
+	var H = Math.floor(nlines * LH ) + 2 ; // multiple round + 2
+	stdout.style.height = '' + H + 'px';
+	sysout.maxlines = nlines;
+	
+	var canvas = document.getElementById("plotter");
+	sysout.height =  H; // remember to init canvas when loading plot.lib
+	canvas.width = canvas.height = H ;
+	
+	var output = document.getElementById("output");
+	output.style.height = '' + H + 'px';
+	return nlines ;
+	}
+	
+// sets lines = function (size)
+var _plot_size = function (top, argc) {
+	var H =  window.getComputedStyle(stdout).height ,
+	   LH =  parseFloat(window.getComputedStyle(stdout).lineHeight),
+	   nlines, size;
+	if(argc === 0) return H ;
+	size = _stack[top] ; // wanted value
+	if(! (typeof size === "number")) glisp_error(22,size,"plot-size");
+	
+	nlines =  Math.floor((size - 2)/ LH);
+	_stdout_lines (nlines);
+	return parseFloat(window.getComputedStyle(stdout).height);
+}
+
+	
+var _stdout_color = function (color) {
+	color = nameToString(color);
+	stdout.style.color = color;
+	return __void;
+}
+
+var _stdout_background = function (color) {
+	color = nameToString(color);
+	stdout.style.backgroundColor = color;
+	return __void;
+}
+
+var _stdout_font_size = function (top,argc) {
+	// error NYI
+	var maxlines,LH,size ; 
+	if(argc === 0) return window.getComputedStyle(stdout).fontSize ;
+	
+	size = _stack[top];
+	LH  = size + Math.max(2, Math.floor( size/4)) ;
+	
+	maxlines = Math.floor(parseFloat(window.getComputedStyle(stdout).height) / LH) ;
+console.log("tty-size",size,LH,window.getComputedStyle(stdout).height,maxlines);
+	if(maxlines < 4 || maxlines > 48)
+				glisp_error(24,size,"tty-font-size");  // bad range
+	stdout.style.lineHeight = '' + LH + 'px';
+	stdout.style.fontSize = '' + size + 'px' ;
+
+	_stdout_lines(maxlines);
+	return size ;
+}
+
+var _stdout_font = function (top,argc) {
+	if(argc === 0) return window.getComputedStyle(stdout).fontFamily ;
+	var font = nameToString(_stack[top]);
+	stdout.style.fontFamily  = font ;
+	_stdout_lines(sysout.maxlines);
+	return font;
+}
+
+
+// 0 to inhibit
+var _stdin_autocomplete_delay = function (top, argc) {
+	var msec =  (argc === 1) ? _stack[top] : glisp.autocomplete ;
+	if(! typeof msec === "number" || msec < 0 || msec > 1000)
+			 glisp_error(24,msec,"delay(msec)");  // bad range
+	glisp.autocomplete = msec ;
+	return glisp.autocomplete ;
+}
+
+/*------------------------------
+FILES
+https://developer.mozilla.org/en-US/docs/Using_files_from_web_applications
+if _FILE_TO_STRING : bind symbol, else read/eval/print
+-------------------------------*/
+var _FILE_TO_STRING = null;
+
+function fileSelect() { // click "Load"
+	var infiles = document.getElementById("FILES");
+	infiles.click(); // -> handleFiles()
+	return _true;
+	} 
+	
+function handleFiles () { // from browser file select control
+var infiles = document.getElementById("FILES");
+_reader_rem_proc(true); // standard reader
+		var files = infiles.files; 
+		if (! files) return false;
+		var file = files[0];
+		if (! file) return false;
+		
+		var readAbort = function () { 
+			_FILE_TO_STRING = null;
+			writeln ("Cannot read : " + file.name, _STYLE.plist["warning"]);} ;
+		
+		var reader = new FileReader();
+		reader.onabort = readAbort;
+		reader.onerror = readAbort;
+		reader.onload = function(e) {
+
+			if(_FILE_TO_STRING) {
+				writeln(file.name + " -> " + _FILE_TO_STRING.name ,_STYLE.plist["store"])  ;
+				glisp.user.set(_FILE_TO_STRING,e.target.result) ;
+				GPrinter.newpage(file.name);
+    			GPrinter.write(e.target.result);
+    			GPrinter.newpage();
+				}
+				
+			else {
+				writeln ("Load: "  + file.name, _STYLE.plist["store"]);
+				GPrinter.newpage(file.name);
+    			glisp_rep (e.target.result,true);  // batch mode
+    			GPrinter.newpage();
+    			}
+    		_FILE_TO_STRING = null;
+    		infiles.value = null; // chrome (read twice same file)
+			};
+    	reader.readAsText(file); // UTF-8
+    	return true;
+	}
+	
+
+/*---------------------------------------
+AJAX : load a .glisp, .txt file from server ./lib/
+https://thiscouldbebetter.wordpress.com/2014/06/06/a-stock-ticker-in-javascript-using-the-yahoo-finance-api/
+https://blog.nraboy.com/2014/08/bypass-cors-errors-testing-apis-locally/
+
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --disable-web-security
+--------------------------------*/
+function _loadXMLfile(name) // (load url) // asynchronous
+{
+var xmlhttp;
+if(name.indexOf(".") === -1) name += ".glisp" ;
+if(name.indexOf("http:") === -1 && name.indexOf("file:") === -1) name = "./lib/" + name ;
+
+	_reader_rem_proc(true); // standard reader
+	xmlhttp=new XMLHttpRequest();
+// console.log("XHR",xmlhttp);
+	xmlhttp.onreadystatechange= function() {
+  	if (xmlhttp.readyState==4 && xmlhttp.status==200) {
+    	if(_FILE_TO_STRING) {
+    			writeln(name + "-> " + _FILE_TO_STRING.name ,_STYLE.plist["store"])  ;
+				glisp.user.set(_FILE_TO_STRING,xmlhttp.responseText) ;
+				GPrinter.newpage(name);
+    			GPrinter.write(xmlhttp.responseText);
+    			GPrinter.newpage();
+				}
+		else {
+				writeln("Loaded : " + name,_STYLE.plist["store"])  ;
+    			GPrinter.newpage(name);
+    			glisp_rep (xmlhttp.responseText,true);  // batch mode
+    			GPrinter.newpage();
+    			}
+    	_FILE_TO_STRING = null;
+    	return ;
+    	} // status OK
+    
+    if (xmlhttp.readyState > 2  && xmlhttp.status !== 200) {
+    	writeln("[" + xmlhttp.status + "] Cannot load : " + name  , _STYLE.plist["warning"]) ;
+   	 	_FILE_TO_STRING = null;
+    	}
+    
+    console.log ("xml.status",xmlhttp.status,name,"state",xmlhttp.readyState,xmlhttp.statusText);
+  	} // state change
+
+	try {
+	xmlhttp.open("GET",name,true); // async
+	xmlhttp.send();
+	}
+	catch (err) {
+	writeln("&#x2757; " + err.name + ' : ' + err.message,_STYLE.plist["error"]);
+	}
+	return _true;
+}
+	
+// (load) --> local files dialog
+// (load name) -> remote
+var _load_file = function (top, argc) {
+var name;
+	_FILE_TO_STRING = null;
+	if (argc === 0) return fileSelect();
+	name = _stack[top];
+	name = nameToString(name);
+	return _loadXMLfile(name);
+	}
+	
+// file->string symb [file]
+var _file_to_string = function (top,argc) {
+	var name, symb = _stack[top++];
+	if(! (symb instanceof Symbol)) glisp_error(33,symb,"file->string") ;
+	if(argc === 1) {
+		_FILE_TO_STRING = symb; 
+		fileSelect(); // browser dialog
+		return _true;
+	}
+	_FILE_TO_STRING = symb; 
+	name = nameToString(_stack[top]);
+	_loadXMLfile(name);
+	return _true;
+}
+
+/*--------------------------------
+http://www.html5rocks.com/en/tutorials/cors/
+// Create the XHR object.
+function createCORSRequest(method, url) {
+  var xhr = new XMLHttpRequest();
+  if ("withCredentials" in xhr) {
+    // XHR for Chrome/Firefox/Opera/Safari.
+    xhr.open(method, url, true);
+  } else if (typeof XDomainRequest != "undefined") {
+    // XDomainRequest for IE.
+    xhr = new XDomainRequest();
+    xhr.open(method, url);
+  } else {
+    // CORS not supported.
+    xhr = null;
+  }
+  return xhr;
+}
+
+// Helper method to parse the title tag from the response.
+function getTitle(text) {
+  return text.match('<title>(.*)?</title>')[1];
+}
+
+// Make the actual CORS request.
+function makeCorsRequest() {
+  // All HTML5 Rocks properties support CORS.
+  var url = 'http://updates.html5rocks.com';
+
+  var xhr = createCORSRequest('GET', url);
+  if (!xhr) {
+    alert('CORS not supported');
+    return;
+  }
+
+  // Response handlers.
+  xhr.onload = function() {
+    var text = xhr.responseText;
+    var title = getTitle(text);
+    alert('Response from CORS request to ' + url + ': ' + title);
+  };
+
+  xhr.onerror = function() {
+    alert('Woops, there was an error making the request.');
+  };
+
+  xhr.send();
+}
+------------------------*/
+	
+
+

@@ -1,0 +1,57 @@
+#|
+meteo
+data base format ((date_1 temp wheather) (date_2 ...) ... )
+|#
+
+;; dates predicates
+(define (date-gt? d1 d2) (> (date-diff d1 d2) 0))
+(define (date-lt? d1 d2) (< (date-diff d1 d2) 0))
+
+;; sort list (( date1 val1) (date2 val2) ... )
+(define (d-sort-gt d1 d2) (date-gt? (car d1) (car d2)))
+(define (d-sort-lt d1 d2) (date-lt? (car d1) (car d2)))
+
+;;
+(define (d-sort lst) (list-sort  d-sort-lt lst))
+
+;;
+;;(define *m-icons* (unicode->list 9728 9731))
+(define *m-icons* (list "🔆" "⛅" "🌂" "☃"))
+;;
+(define (meteo-print-1 date-temp)
+	(printf  "🔆  %20a %8.2d %8a"
+		 (date->string (car date-temp)) 
+		 (cadr date-temp)
+		 (list-ref  *m-icons* (caddr date-temp))))
+	
+(define (meteo-print)
+	(printer-page "My meteo")
+    (local-get '*meteo*)
+	(writeln "🔆"   "Date  °C")
+	(for-each meteo-print-1 *meteo*)
+	(printer-page))
+;;
+
+(define (meteo)
+    (local-get '*meteo*) ;; load existing data base
+	(let ((temp (read 18 "Température 🔆  (°C)" ))  
+	     (weather (read 1 "Temps 0-🔆  1-⛅  2-🌂  3-☃"))) ;; defaults in the cloud
+	
+	(if (and (number? temp) (< temp 50) (> temp -20) (number? weather) (>= weather 0) (< weather 4))
+		(set! *meteo* (cons  (list (current-date) temp (floor weather)) *meteo*))
+		(error "meteo: check input" (list temp weather)))
+	(meteo-print-1 (car *meteo*))
+	(local-put '*meteo*)
+	(void)))
+	
+(define (meteo-clear-last) ;; // last-entry
+    (local-get '*meteo*)
+	(unless (null? *meteo*) (set! *meteo* (cdr *meteo*)) (local-put '*meteo*))
+	(meteo-print))
+	
+
+
+;;
+(define *meteo* null) ;;  init data base to empty list
+(string-delimiter "")
+(writeln "usage: (meteo) (meteo-print) (meteo-clear-last)")

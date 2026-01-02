@@ -1,0 +1,99 @@
+;; http://arxiv.org/pdf/1603.03720v1.pdf
+;; https://www.quantamagazine.org/20160313-mathematicians-discover-prime-conspiracy/
+
+'''Prime Conspiracy'''
+
+A recent discovery, quoted from [https://www.quantamagazine.org/20160313-mathematicians-discover-prime-conspiracy/ Quantamagazine] , Marsh 23,2016 :
+"Prime numbers, it seems, have decided preferences about the final digits of the primes that immediately follow them." 
+
+The task is to check this assertion, modulo 10. Lets call i -> j a transition if i is the last decimal digit of a prime, and j the last decimal digit of the following prime.
+
+'''Task'''
+Considering the first 1_000_000 primes, count the number of transitions i -> j , print them along with their relative frequency. i and j are in (1,3,7,9) . Check that fresuencies are not evenly distributed.
+
+Extra credit : 100_000_000 primes.
+
+''Example'''
+<pre>
+10000 first primes. Transitions prime % 10 → next-prime % 10.
+1 → 1 count:        365 frequency: 3.65 %
+1 → 3 count:        833 frequency: 8.33 %
+1 → 7 count:        889 frequency: 8.89 %
+1 → 9 count:        397 frequency: 3.97 %
+3 → 1 count:        529 frequency: 5.29 %
+3 → 3 count:        324 frequency: 3.24 %
+3 → 7 count:        754 frequency: 7.54 %
+3 → 9 count:        907 frequency: 9.07 %
+7 → 1 count:        655 frequency: 6.55 %
+7 → 3 count:        722 frequency: 7.22 %
+7 → 7 count:        323 frequency: 3.23 %
+7 → 9 count:        808 frequency: 8.08 %
+9 → 1 count:        935 frequency: 9.35 %
+9 → 3 count:        636 frequency: 6.36 %
+9 → 7 count:        541 frequency: 5.41 %
+9 → 9 count:        379 frequency: 3.79 % 
+<pre>
+
+(decimals 4)
+
+(define (print-trans trans   m N)
+(printf "%d first primes. Transitions prime %% %d → next-prime %% %d." N m m)
+	(define s (// (apply + (vector->list trans)) 100))
+	(for ((i (* m m)) (t trans))
+	#:continue (<= t 1) ;; get rid of 2,5 primes
+	(printf  " %d → %d   count: %10d frequency:   %d %%  " (quotient i m)  (% i m) t  (// t s) )))
+
+;; can apply to any modulo m
+(define trans (make-vector (* 10 10)))
+(define (task (m  10) (N 1000_000))
+	
+	(for ((p1 (in-primes 2)) (p2 (in-primes 3)) (k N))
+		 (vector+= trans (+ (* (% p1 m) m) (% p2 m)) 1))
+	(print-trans trans   m N))
+	
+	
+;; BATCH
+(define trans (make-vector (* 10 10)))
+(define p-loops 0)
+
+(define (t-prime p1)
+	(define  p2 0) 
+	(for ((k 100000))
+		(set! p2 (next-prime p1))
+		(vector+= trans (+ (* (% p1 10) 10) (% p2 10)) 1)
+		(set! p1 p2))
+	(++ p-loops)
+	(writeln 't-prime p-loops p2)
+	(if (>= p-loops 1000 ) #f p2))
+	
+(define T (make-task t-prime 2))
+(task-run T)
+
+t-prime     980     1995230821    
+t-prime     981     1997376151    
+t-prime     982     1999520693    
+😖️ error: prime? : too large number (use bigint.lib) : 2000000001
+trans
+[18]→ #( 0 0 0 0 0 0 0 0 0 0 0 4539388 0 7298408 0 0 0 7372500 0 5344594 0 0 0 1 0 0 0 0 0 0 0 5903513 0 4362278 0 1 0 6919177 0 7370946 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 6260556 0 6635164 0 0 0 4359029 0 7300854 0 0 0 0 0 0 0 0 0 0 0 7851433 0 6260065 0 0 0 5904896 0 4539482)
+
+98222286 first primes. Transitions prime % 10 → next-prime % 10.
+1 → 1 count:    4539388 frequency: 4.6215 %
+1 → 3 count:    7298408 frequency: 7.4305 %
+1 → 7 count:    7372500 frequency: 7.5059 %
+1 → 9 count:    5344594 frequency: 5.4413 %
+3 → 1 count:    5903513 frequency: 6.0104 %
+3 → 3 count:    4362278 frequency: 4.4412 %
+3 → 7 count:    6919177 frequency: 7.0444 %
+3 → 9 count:    7370946 frequency: 7.5044 %
+7 → 1 count:    6260556 frequency: 6.3739 %
+7 → 3 count:    6635164 frequency: 6.7553 %
+7 → 7 count:    4359029 frequency: 4.4379 %
+7 → 9 count:    7300854 frequency: 7.433 %
+9 → 1 count:    7851433 frequency: 7.9935 %
+9 → 3 count:    6260065 frequency: 6.3734 %
+9 → 7 count:    5904896 frequency: 6.0118 %
+9 → 9 count:    4539482 frequency: 4.6216 % 
+
+[19]→ 98222286
+
+	

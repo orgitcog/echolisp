@@ -1,0 +1,25 @@
+;; http://rosettacode.org/wiki/Hash_join
+
+
+ 
+(define ages '((27 "Jonah") (18 "Alan") (28 "Glory") (18 "Popeye") (28 "Alan")))
+(define nemesis '(("Jonah" "Whales") ("Jonah" "Spiders") ("Alan" "Ghosts") ("Alan" "Zombies") ("Glory" "Buffy")))
+
+(define (table-hash table source key-proc )
+(local-make-store table)
+(for ((r source))
+	(local-put-value 
+		(key-proc r) 
+		(append (list r) (local-get-value (key-proc r) table)) table)))
+
+(define (key-name-age record) (second record))
+(table-hash 'AGES ages key-name-age)
+
+	
+(define (key-nemesis-name record) (first record))
+(table-hash 'NEMESIS nemesis key-nemesis-name)
+
+(for* ((k (local-keys 'AGES)) 
+	  (a (local-get-value k 'AGES))
+	  (n (local-get-value k 'NEMESIS)))
+	  (writeln a n))

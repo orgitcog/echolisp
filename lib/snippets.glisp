@@ -1,0 +1,33 @@
+#|
+Snippets
+|#
+
+#|
+Rosetta code
+implement a queue in message passing style
+usage
+	(define q (make-Q))
+	(q 'push 333)
+	(q 'push 334)
+	(q 'pop)
+	...
+|#
+
+
+
+(define (make-Q)
+  (let ((q (make-vector 0)))
+    (lambda (message . args)
+      (case message
+        ((empty?) (vector-empty? q))
+        ((top) (if (vector-empty? q) (error  'Q:top:empty q) (vector-ref q 0)))
+        ((push) (vector-push q (car args)))
+        ((pop) (if (vector-empty? q) (error 'Q:pop:empty q) (vector-shift q)))
+        ((to-list) (vector->list q))
+        ((from-list) (set! q (list->vector (car args))) q )
+        (else (info 'make-Q) (error  "Q:bad message:" message ))))))
+        
+(info 'make-Q 
+"usage: (define q (make-Q)) ;  (q '[top | empty? | pop | push value | to-list | from-list list])")
+
+(display "snippet:make-Q" "color:green")

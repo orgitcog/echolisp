@@ -1,0 +1,33 @@
+
+;; http://rosettacode.org/wiki/CSV_data_manipulation
+
+(define file.csv #<<
+C1,C2,C3,C4,C5
+1,5,9,13,17
+2,6,10,14,18
+3,7,11,15,19
+4,8,12,16,20
+>>#)
+
+;; CSV -> LISTS
+(define (csv->row line)  (map (lambda(x) (or (string->number x) x)) (string-split line ",")))
+(define (csv->table csv) (map  csv->row (string-split csv "\n")))
+;; LISTS -> CSV
+(define (row->csv row) (string-join row ","))
+(define (table->csv header rows)
+    (string-join  (cons (row->csv header) (for/list ((row rows)) (row->csv row))) "\n"))
+
+
+ (define (task file)
+ (let*
+ 	((table (csv->table file))
+ 	(header (first table))
+ 	(rows (rest table)))
+ 	
+ 	(table->csv
+ 		(append header "SUM")
+ 		(for/list ((row rows)) (append row (apply + row))))))
+ 
+		
+		 
+		

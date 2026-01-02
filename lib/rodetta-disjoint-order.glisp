@@ -1,0 +1,113 @@
+;; http://rosettacode.org/wiki/Order_disjoint_list_items#Racket
+
+
+(lib 'list) ;; for list-delete
+
+(define dataM
+'((the cat sat on the mat)
+(the cat sat on the mat)
+(A B C A B C A B C)
+(A B C A B D A B E)      
+(A B)                    
+(A B)                    
+(A B B A)))               
+		
+(define orderM
+'((mat cat)
+(cat mat)
+(C A C A)
+(E A D A)
+(B)      
+(B A)    
+(B A)))
+
+
+(define (order-disjoint M N)
+(define R (append N null)) ;; tmp copy of N : delete w when used
+	(for/list [(w M)]
+	(if
+		(not (member w R)) w ;; output as is
+		(begin0
+		(first N) ;; replacer
+		(set! N (rest N))
+		(set! R (list-delete R w))))))
+		
+
+
+(for [(m dataM) (n orderM)]
+	(writeln 'M m 'Order n '→ (order-disjoint m n)))
+	
+;;;==============
+=={{header|EchoLisp}}==
+<lang scheme>
+(lib 'list) ;; for list-delete
+
+(define dataM
+'((the cat sat on the mat)
+(the cat sat on the mat)
+(A B C A B C A B C)
+(A B C A B D A B E)      
+(A B)                    
+(A B)                    
+(A B B A)))               
+		
+(define orderM
+'((mat cat)
+(cat mat)
+(C A C A)
+(E A D A)
+(B)      
+(B A)    
+(B A)))
+
+(define (order-disjoint M N)
+(define R (append N null)) ;; tmp copy of N : delete w when used
+	(for/list [(w M)]
+	(if
+		(not (member w R)) w ;; output as is
+		(begin0
+		(first N) ;; replacer
+		(set! N (rest N))
+		(set! R (list-delete R w))))))
+		
+
+</lang>
+{{out}}
+<pre>
+(for [(m dataM) (n orderM)]
+(writeln 'M m 'Order n '→ (order-disjoint m n)))
+
+M     (the cat sat on the mat)     Order     (mat cat)     →     (the mat sat on the cat)    
+M     (the cat sat on the mat)     Order     (cat mat)     →     (the cat sat on the mat)    
+M     (A B C A B C A B C)     Order     (C A C A)     →     (C B A C B A A B C)    
+M     (A B C A B D A B E)     Order     (E A D A)     →     (E B C A B D A B A)    
+M     (A B)     Order     (B)     →     (A B)    
+M     (A B)     Order     (B A)     →     (B A)    
+M     (A B B A)     Order     (B A)     →     (B A B A)    
+</pre>
+
+;;;;====================
+	
+
+(define (sort-disjoint values indices)
+    (define sorted (list-sort <
+    (for/list [(v values) (i (in-naturals))]
+	#:when (member i indices)  v)))
+	
+    (for/list [(v values) (i (in-naturals))]
+	(if (not (member i indices)) v
+	(begin0
+		(first sorted)
+		(set! sorted (rest sorted))))))
+		
+(define (task)
+	(sort-disjoint '[7 6 5 4 3 2 1 0] {6 1 7}))
+	
+(task)
+    → (7 0 5 4 3 2 1 6)
+
+		
+
+		
+
+		

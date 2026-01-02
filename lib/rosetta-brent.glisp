@@ -1,0 +1,118 @@
+;; http://maths-people.anu.edu.au/~brent/pd/rpb051i.pdf
+;; https://comeoncodeon.wordpress.com/2010/09/18/pollard-rho-brent-integer-factorization/
+
+def brent(N):
+        if N%2==0:
+                return 2
+        y,c,m = random.randint(1, N-1),random.randint(1, N-1),random.randint(1, N-1)
+        g,r,q = 1,1,1
+        while g==1:             
+                x = y
+                for i in range(r):
+                        y = ((y*y)%N+c)%N
+                k = 0
+                while (k<r and g==1):
+                        ys = y
+                        for i in range(min(m,r-k)):
+                                y = ((y*y)%N+c)%N
+                                q = q*(abs(x-y))%N
+                        g = gcd(q,N)
+                        k = k + m
+                r = r*2
+        if g==N:
+                while True:
+                        ys = ((ys*ys)%N+c)%N
+                        g = gcd(abs(x-ys),N)
+                        if g>1:
+                                break
+         
+        return g    
+        
+(define-syntax-rule (loop r body ...) (for((i r)) body ...))
+(define-syntax-rule (:= a b) (set! a b))
+(define-syntax-rule (:== a b p) (set! a (% b p)))
+(define-syntax-rule (*== a b p) (set! a (% (* a b)  p)))
+(define (f x) (+ (* x x) 2))
+(define loops 0)
+
+
+(define (brent N)
+	(define-values (y c m) (list (1+(random N)) (1+(random N)) (1+(random N))))
+	(define-values (g r q) (list 1 1 1))
+	
+	
+	(while (= g 1)
+	(++ loops)
+		(define x y)
+		(loop r
+			(:== y (f y ) N ))
+		(define k 0)
+		
+		(while (and (< k r) (= g 1))
+		
+			(define ys y)
+			(loop (min m (- r k))
+				(:== y (f y) N)
+				(*== q (abs(- x y)) N))
+				
+			(:= g (gcd q N))
+			(+= k m))
+			
+		(*= r 2))
+		
+		(when (= g N)
+			(while #t
+				(:== ys (f ys) N)
+				(:= g (gcd (abs(- x ys)) N))
+				#:break (> g 1)))	
+		g )
+		
+(define (task d)
+	(define n (* (random-prime d) (random-prime d)))
+	(set! loops 0)
+	(define f (brent n))
+	(writeln 'n n 'f f 'f (/ n f) loops)
+	(set! loops 0)
+	(define f (brent2 n))
+	(writeln 'n n 'f f 'f (/ n f) loops)
+	)
+	
+(define (task2 d)
+	(define n (* (random-prime d) (random-prime d)))
+	(define f (brent2 n))
+	(writeln 'n n 'f f 'f (/ n f)))
+	
+(define F8 (1+ (expt 2 256)))
+(define (fermat p) (1+ (expt 2 (expt 2 p))))
+
+(define (brent2 N)
+	(define-values (y x x1 k l P c g) '(2 2 2 1 1 1 0 1))
+	(while #t
+	(++ loops)
+		(:== x (f x) N)
+		(:== P (* P (- x1 x)) N)
+		(++ c)
+		(when (= c 20) (:= g (gcd P,N)))
+		#:break (> g 1)
+		(:= y x)
+		(:= c 0)
+		(:= k (1- k))
+;;
+		#:continue (!zero? k)
+		(:= g (gcd P N))
+		#:break ( > g 1)
+		(:= x1 x)
+		(:= k l)
+		(*= l 2)
+			(loop k (:== x (f x) N))
+		(:= y x)
+		(:= c 0))
+		
+	
+		
+		(when (= g N)
+			(while #t
+				(:== y (f y) N)
+				(:= g (gcd (- x1 y) N))
+				#:break (> g 1)))	
+		g )

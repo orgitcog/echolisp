@@ -1,0 +1,26 @@
+;; http://rosettacode.org/wiki/Munching_squares
+(lib 'types)
+(lib 'plot)
+
+(define (plot-munch (m 256))
+	(define PIX (pixels->int32-vector)) ;; get canvas image
+	(define (pcolor x y) ;; color at (x,y)
+		(hsv->rgb
+			(// (bitwise-xor (modulo x m) (modulo y m)) m)
+			0.9
+			0.9))
+	(pixels-map pcolor PIX)
+	(vector->pixels PIX)) ;; draw canvas image
+
+
+(define (plot-munch-best (m 256))
+	(define PIX (pixels->int32-vector)) ;; get canvas image
+	(define (pcolor x y) ;; color at (x,y)
+		(rgb 
+			
+			(// (bitwise-xor (modulo x m) (modulo y m)) m)
+		    (// (bitwise-xor (modulo x m) (modulo y m)) m)
+		    0
+			))
+	(pixels-map pcolor PIX)
+	(vector->pixels PIX)) ;; draw canvas image

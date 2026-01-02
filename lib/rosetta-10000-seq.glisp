@@ -1,0 +1,59 @@
+;; http://rosettacode.org/wiki/Hofstadter-Conway_$10,000_sequence
+;; a(n)=a(a(n-1))+a(n-a(n-1))
+
+
+(decimals 4)
+(cache-size 2000000)
+
+(define (a n)
+	(+ (a (a (1- n))) (a (- n (a (1- n))))))
+	
+(remember 'a #(0 1 1))
+
+;; prints max a(n)/n in [2**i 2**i+1] intervals
+;; return Mallows number checked up to 2**20
+
+(define (task  (maxv) (start 1) (end 2) (v) (mrange 0))
+	(for ((i  (in-range 1 21)))
+	(set! maxv 0)
+	
+	(for ((n  (in-range start end)))
+	(set! v (// (a n) n))
+	#:when (> v maxv)
+		(set! maxv v))
+	    (when (and (zero? mrange) (< maxv 0.55)) (set! mrange end))
+	
+	(printf "[%d .. %d]  →  max a(n)/n:  %d " start end maxv)
+	(set! start end)
+	(set! end (* start 2)))
+	
+;; mallows
+	(for ((n (in-range mrange 2 -1)))
+		#:break (> (// (a n) n) 0.55) => n )
+	)
+	
+|#
+[1 .. 2] → max a(n)/n: 1
+[2 .. 4] → max a(n)/n: 0.6667
+[4 .. 8] → max a(n)/n: 0.6667
+[8 .. 16] → max a(n)/n: 0.6364
+[16 .. 32] → max a(n)/n: 0.6087
+[32 .. 64] → max a(n)/n: 0.5909
+[64 .. 128] → max a(n)/n: 0.5761
+[128 .. 256] → max a(n)/n: 0.5674
+[256 .. 512] → max a(n)/n: 0.5595
+[512 .. 1024] → max a(n)/n: 0.5549
+[1024 .. 2048] → max a(n)/n: 0.5501
+[2048 .. 4096] → max a(n)/n: 0.5475
+[4096 .. 8192] → max a(n)/n: 0.5441
+[8192 .. 16384] → max a(n)/n: 0.5424
+[16384 .. 32768] → max a(n)/n: 0.5401
+[32768 .. 65536] → max a(n)/n: 0.5388
+[65536 .. 131072] → max a(n)/n: 0.537
+[131072 .. 262144] → max a(n)/n: 0.536
+[262144 .. 524288] → max a(n)/n: 0.5346
+[524288 .. 1048576] → max a(n)/n: 0.5338
+[1]→ 1489
+|#
+	
+	

@@ -1,0 +1,67 @@
+;; http://rosettacode.org/wiki/Anagrams
+
+(require 'struct)
+(require 'hash)
+(require 'sql)
+(require 'words)
+(require 'dico.fr.no-accent)
+
+
+(define mots-français (words-select #:any null 999999))
+(string-delimiter "")
+
+(define (string-sort str)
+	(list->string (list-sort string<?  (string->list str))))
+	
+(define (ana-sort H words)
+	(for ((w words))
+		#:continue (< (string-length w) 4)
+		(let [(key (string-sort w))]  (hash-set H key (1+ (hash-ref! H key 0))))))
+		
+(define (anagrams w words)
+	(set! w (string-sort w))
+	(make-set
+	(for/list (( ana words))
+		#:when (string=? w (string-sort ana))
+		ana)))
+
+(define (task words)
+(define H (make-hash))
+	(ana-sort H words)
+	(hash-get-keys H  
+	    (for/fold (hmax 0) ((h H) ) 
+	    #:when (>= (cdr h) hmax)
+	    (cdr h))
+	))
+	
+(task mots-français)
+
+#|
+(task mots-français )
+[12]→ (acenr)
+(anagrams "acenr" mots-français)
+[13]→ { ancre caner caren carne ceran cerna crane ecran encra nacre nerac rance renac }
+(word? "renac")
+[14]→ (renac pat)
+(word? 'ceran)
+[15]→ (ceran pat)
+(word? 'ancre)
+[16]→ (ancre nom fem sing)
+			
+		
+LW
+(length LW)
+[14]→ 235886
+(anagrams "eliv" LW)
+[15]→ (evil live veil vile vlei)
+(task)
+[16]→ (acert . 9)
+(anagrams "acert" LW)
+[17]→ (caret carte cater crate creat creta react recta trace)
+(make-set &17)
+[18]→ { caret carte cater crate creat creta react recta trace }
+|#
+
+
+			
+	

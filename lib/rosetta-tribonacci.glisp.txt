@@ -1,0 +1,24 @@
+
+
+
+
+(define (make-nacci name seed)
+		(define len (1+ (vector-length seed)))
+		(define-global name 
+			`(lambda(n) (for/sum ((i (in-range (1- n) (- n ,len) -1)))  (,name i))))
+		(remember name seed)
+		name)
+		
+
+(define nacci-family '(
+	(Fibonacci #(1 1))
+	(Tribonacci #(1 1 2))
+	(Tetranacci #(1 1 2 4))
+	(Lucas #(2 1)))
+	
+(define (task nacci-family)
+	(for ((nacci nacci-family))
+	(define-values (name seed) nacci)
+	(make-nacci name seed)
+	(printf %s %a %d (take name 10))))
+	

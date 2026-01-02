@@ -1,0 +1,40 @@
+(define ss (stream-cons 1 (stream-add ones ss)))
+(define ones (stream-cons 1 ones))
+
+
+// closure exemple
+(define ( make-alternate (sw #t)) (lambda(n) 
+	(cond 
+		(( even? n) 0) 
+		(sw  (set! sw #f) (// n)) 
+		(else  (set! sw #t) (- (// n)))))) 
+	
+		
+(define alternate (make-alternate))
+
+
+          
+// working
+(define a 0) (define b 0)
+(define (f u) (set! a (lambda(x) (write "a:u" u) (set! u (+ u x)) u)) 
+              (set! b (lambda(x) (write "b:u" u) (set! u (- u x)) u)))
+              
+// working
+			
+(define (f u) ((lambda (x) (set! u ( + x x))) u)u)
+			
+			
+// self printing
+((lambda (arg)
+   (list arg
+         (list (quote quote)
+               arg)))
+ (quote (lambda (arg)
+          (list arg
+                (list (quote quote)
+                      arg)))))
+                      
+// racket
+(define-syntax-rule (swap x y)  (let ([tmp x])    (set! x y)    (set! y tmp)))
+
+(let ([tmp 42] [other 666])  (swap tmp other)  (list tmp other))

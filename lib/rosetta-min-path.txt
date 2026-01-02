@@ -1,0 +1,68 @@
+#|let dist be a |V| × |V| array of minimum distances initialized to ∞ (infinity)
+let next be a |V| × |V| array of vertex indices initialized to null
+
+procedure FloydWarshallWithPathReconstruction ()
+   for each edge (u,v)
+      dist[u][v] ← w(u,v)  // the weight of the edge (u,v)
+      next[u][v] ← v
+   for k from 1 to |V| // standard Floyd-Warshall implementation
+      for i from 1 to |V|
+         for j from 1 to |V|
+            if dist[i][k] + dist[k][j] < dist[i][j] then
+               dist[i][j] ← dist[i][k] + dist[k][j]
+               next[i][j] ← next[i][k]
+
+procedure Path(u, v)
+   if next[u][v] = null then
+       return []
+   path = [u]
+   while u ≠ v
+       u ← next[u][v]
+       path.append(u)
+   return path
+|#
+
+
+
+(define (init-edges n dist next)
+(for* ((i n) (j n))
+	(array-set! dist i i 0)
+	(array-set! next i j null)
+	#:continue (= j i)
+	(array-set! dist i j Infinity)
+	#:continue (< (random) 0.3)
+	(array-set! dist i j (- 50 (random 100)))
+	(array-set! next i j j)))
+	
+
+(define (floyd-with-path n dist next (d 0))
+	(for* ((k n) (i n) (j n))
+	#:break (< (array-ref dist j j) 0) => 'negative-cycle
+	(set! d (+ (array-ref dist i k) (array-ref dist k j)))
+	(when (< d (array-ref dist i j))
+		(array-set! dist i j d)
+		(array-set! next i j (array-ref next i k)))))
+
+(define (path u v)
+	(cond 
+	((= u v) (list u))
+	((null? (array-ref next u v)) null)		
+	(else (cons u (path (array-ref next u v) v)))))
+	
+(define( mdist u v)
+	(array-ref dist u v))
+	
+(define (task)
+	(init-edges n dist next)
+	(array-print dist)
+	(floyd-with-path n dist next))
+
+	
+	(define n 8)
+	(define next (make-array n n))
+	(define dist (make-array n n))
+
+
+	
+		
+
