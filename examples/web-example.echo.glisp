@@ -1,0 +1,92 @@
+;; ============================================
+;; File: web-example.echo.glisp
+;; Purpose: Web/Browser interaction example
+;; ============================================
+;; 
+;; Demonstrates EchoLisp-specific features for web
+;; development including DOM manipulation and events.
+;; This uses .echo.glisp extension because it contains
+;; EchoLisp-specific browser features.
+;;
+;; Usage:
+;;   Load in EchoLisp browser environment
+;;   (load "web-example.echo.glisp")
+;;
+;; ============================================
+
+;; DOM Helper Functions
+;; ====================
+
+;; get-element-by-id: string -> element
+;; 
+;; Retrieves a DOM element by its ID
+;;
+;; Arguments:
+;;   id - The element ID to search for
+;;
+;; Returns: DOM element or #f if not found
+;;
+(define (get-element-by-id id)
+  (js-eval (string-append "document.getElementById('" id "')")))
+
+;; create-div: string -> element
+;; 
+;; Creates a new div element with content
+;;
+;; Arguments:
+;;   content - Text content for the div
+;;
+;; Returns: New div element
+;;
+(define (create-div content)
+  (let ((div (js-eval "document.createElement('div')")))
+    (js-eval "arguments[0].textContent = arguments[1]" div content)
+    div))
+
+;; append-to-body: element -> void
+;; 
+;; Appends an element to document body
+;;
+;; Arguments:
+;;   element - DOM element to append
+;;
+(define (append-to-body element)
+  (js-eval "document.body.appendChild(arguments[0])" element))
+
+;; Event Handling
+;; ==============
+
+;; on-click: element function -> void
+;; 
+;; Attaches a click handler to an element
+;;
+;; Arguments:
+;;   element - DOM element
+;;   handler - Function to call on click
+;;
+(define (on-click element handler)
+  (js-eval "arguments[0].addEventListener('click', arguments[1])"
+           element
+           handler))
+
+;; Example: Create interactive button
+;; ===================================
+
+(define (create-counter-button)
+  (let ((count 0)
+        (button (js-eval "document.createElement('button')")))
+    (js-eval "arguments[0].textContent = 'Click count: 0'" button)
+    (on-click button
+              (lambda ()
+                (set! count (+ count 1))
+                (js-eval "arguments[0].textContent = 'Click count: ' + arguments[1]"
+                         button
+                         count)))
+    button))
+
+;; Demo function
+(define (web-demo)
+  (display "Creating interactive web elements...\n")
+  (let ((button (create-counter-button)))
+    (append-to-body button)
+    (display "Counter button added to page!\n")))

@@ -40,6 +40,17 @@ To manually trigger the sync:
 2. Select "Sync EchoLisp Content" workflow
 3. Click "Run workflow"
 
+## Development Standards
+
+This repository follows established development standards for EchoLisp code:
+
+- **[DEVELOPMENT_STANDARDS.md](./DEVELOPMENT_STANDARDS.md)** - Core standards and best practices
+- **[NAMING_PROTOCOLS.md](./NAMING_PROTOCOLS.md)** - File naming conventions (`.echo.*` prefix)
+- **[CODING_PATTERNS.md](./CODING_PATTERNS.md)** - Common coding patterns
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** - How to contribute
+
+All new EchoLisp files should follow the `.echo.ext` naming convention (e.g., `module.echo.scm`, `utils.echo.glisp`).
+
 ## Status
 
 ✅ **Ready to use!** The EchoLisp content has been successfully synced from the official source and is ready for offline use.
