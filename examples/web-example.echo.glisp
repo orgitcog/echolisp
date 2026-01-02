@@ -22,9 +22,12 @@
 ;; Retrieves a DOM element by its ID
 ;;
 ;; Arguments:
-;;   id - The element ID to search for
+;;   id - The element ID to search for (should be validated/trusted)
 ;;
 ;; Returns: DOM element or #f if not found
+;;
+;; Security Note: In production code, validate 'id' parameter to prevent
+;; injection attacks. This example assumes trusted input from REPL.
 ;;
 (define (get-element-by-id id)
   (js-eval (string-append "document.getElementById('" id "')")))
@@ -37,6 +40,9 @@
 ;;   content - Text content for the div
 ;;
 ;; Returns: New div element
+;;
+;; Security Note: Using textContent (not innerHTML) for safe text insertion.
+;; This prevents XSS when content comes from untrusted sources.
 ;;
 (define (create-div content)
   (let ((div (js-eval "document.createElement('div')")))

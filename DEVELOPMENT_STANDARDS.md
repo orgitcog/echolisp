@@ -282,6 +282,13 @@ test: add tests for edge cases
 - Always validate external input
 - Sanitize data from web sources
 - Use type predicates for validation
+- Never directly concatenate user input into JavaScript eval strings
+
+### Code Injection Prevention
+- Avoid `js-eval` with user-supplied strings
+- Use parameterized approaches (pass values as arguments to js-eval)
+- Prefer `textContent` over `innerHTML` for user-provided text
+- Validate and sanitize before DOM insertion
 
 ### Resource Management
 - Clean up resources (files, connections)

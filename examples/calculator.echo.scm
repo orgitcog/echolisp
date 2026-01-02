@@ -51,6 +51,8 @@
 ;;   (safe-divide 10 2) ;; => 5
 ;;   (safe-divide 10 0) ;; => #f
 ;;
+;; Note: Returns #f instead of throwing error for graceful handling
+;;
 (define (safe-divide a b)
   (if (zero? b)
       #f
