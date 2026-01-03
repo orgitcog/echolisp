@@ -70,8 +70,82 @@ After initialization, the repository should contain:
 - Documentation and help files
 - Example code and libraries
 
+## Development Standards
+
+Before contributing code to this repository, please familiarize yourself with our development standards:
+
+- **[DEVELOPMENT_STANDARDS.md](./DEVELOPMENT_STANDARDS.md)** - Core development standards, file naming conventions, code organization patterns, and best practices
+- **[NAMING_PROTOCOLS.md](./NAMING_PROTOCOLS.md)** - Detailed file naming protocols and extension guidelines
+- **[CODING_PATTERNS.md](./CODING_PATTERNS.md)** - Common coding patterns and implementation examples
+
+### Key Standards for Contributors
+
+#### File Naming Convention
+
+All new EchoLisp source files **MUST** use the `.echo.` prefix before the file extension:
+
+- ✅ `my-module.echo.scm` - Correct
+- ❌ `my-module.scm` - Incorrect
+
+**Supported Extensions:**
+- `.echo.scm` - Standard Scheme implementation files
+- `.echo.glisp` - EchoLisp-specific features and extensions
+- `.echo.lisp` - Common Lisp style implementations
+- `.echo.lsp` - Short utility files
+- `.echo.ls` - Minimal scripts
+- `.echo.s` - Scheme shorthand for core files
+
+See [NAMING_PROTOCOLS.md](./NAMING_PROTOCOLS.md) for detailed guidelines on when to use each extension.
+
+#### Code Style
+
+- Use 2 spaces for indentation
+- Follow functional programming principles
+- Use descriptive names with kebab-case
+- Add documentation comments for public functions
+- Write tests for new functionality
+
+#### Commit Messages
+
+Use conventional commit format:
+```
+feat: add new feature
+fix: correct bug
+docs: update documentation
+refactor: improve code structure
+test: add or update tests
+```
+
+## Contributing Code
+
+### Process
+
+1. **Fork the repository**
+2. **Create a feature branch**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+3. **Follow the development standards** (see above)
+4. **Write tests** for your changes
+5. **Update documentation** as needed
+6. **Commit your changes** with clear messages
+7. **Submit a pull request**
+
+### Pull Request Guidelines
+
+- Ensure all tests pass
+- Follow the naming protocols for new files
+- Include documentation for new features
+- Reference any related issues
+- Provide clear description of changes
+
 ## Questions?
 
 For questions about EchoLisp itself, refer to:
 - Official documentation: https://www.echolalie.org/echolisp/help.html
 - Rosetta Code examples: https://rosettacode.org/wiki/Category:EchoLisp
+
+For questions about this repository or contributing:
+- Read the [DEVELOPMENT_STANDARDS.md](./DEVELOPMENT_STANDARDS.md)
+- Open an issue for discussion
+- Check existing issues and pull requests

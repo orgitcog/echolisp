@@ -1,0 +1,216 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    ECHOLISP DEVELOPMENT STANDARDS                            ║
+║                         Version 1.0.0 (2026-01-02)                           ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                          FILE NAMING PROTOCOL                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+                          ALL FILES USE .echo. PREFIX
+                                      │
+                ┌─────────────────────┼─────────────────────┐
+                │                     │                     │
+          Standard Scheme      EchoLisp Specific    Common Lisp Style
+           .echo.scm              .echo.glisp          .echo.lisp
+                │                     │                     │
+        ┌───────┴───────┐     ┌───────┴───────┐     ┌─────┴─────┐
+        │               │     │               │     │           │
+    Portable      R5RS/R7RS  Browser      Graphics  CLOS    Generics
+    Scheme        Compatible  Features     & DOM    Classes  Methods
+                              
+                ┌──────────────┴──────────────┐
+                │                             │
+         Short Utilities              Minimal Scripts
+           .echo.lsp                    .echo.ls
+                                        .echo.s
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                       FUNCTION NAMING CONVENTIONS                            │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+    Pattern              Example                Purpose
+    ───────────────────────────────────────────────────────────────────────
+    name?                empty-list?            Predicate (returns boolean)
+    name!                set-value!             Mutator (modifies state)
+    from->to             string->number         Type converter
+    make-name            make-point             Constructor
+    name-field           point-x                Accessor
+    regular-name         calculate-sum          Regular function
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         DOCUMENTATION STRUCTURE                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+                        STANDARDS_INDEX.md
+                    (Start here - Navigation hub)
+                                │
+                ┌───────────────┼───────────────┐
+                │               │               │
+         Quick Reference   Core Standards   Patterns
+                │               │               │
+                │               │               └─► CODING_PATTERNS.md
+                │               │                   • Data structures
+                │               │                   • Functional patterns
+                │               │                   • Web development
+                │               │                   • Error handling
+                │               │                   • Testing
+                │               │
+                │               ├─► DEVELOPMENT_STANDARDS.md
+                │               │   • File naming
+                │               │   • Code organization
+                │               │   • Best practices
+                │               │   • Security
+                │               │
+                │               └─► NAMING_PROTOCOLS.md
+                │                   • Extension guide
+                │                   • Function patterns
+                │                   • Variable conventions
+                │
+                └─► STANDARDS_QUICK_REFERENCE.md
+                    • Quick lookup
+                    • Common patterns
+                    • Checklists
+
+            Supporting Documentation:
+            • MIGRATION_GUIDE.md - Transitioning existing code
+            • CONTRIBUTING.md - How to contribute
+            • examples/ - Working code samples
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                            DIRECTORY STRUCTURE                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+    project/
+    ├── lib/                    Core libraries (.echo.scm, .echo.glisp)
+    ├── examples/              Example code with documentation
+    ├── tests/                 Test files (*-test.echo.*)
+    ├── docs/                  Additional documentation
+    └── config/                Configuration (.echo.lsp, .echo.ls)
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                          CODE ORGANIZATION TEMPLATE                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+    ;; ============================================
+    ;; File: module-name.echo.scm
+    ;; Purpose: Brief description
+    ;; ============================================
+    
+    ;; ========================================
+    ;; Private Helpers (prefix with % or -)
+    ;; ========================================
+    
+    (define (%internal-helper x) ...)
+    
+    ;; ========================================
+    ;; Public API (with documentation)
+    ;; ========================================
+    
+    ;; function-name: arg1 arg2 -> result
+    ;; Description, arguments, returns, example
+    (define (function-name arg1 arg2) ...)
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                            EXTENSION QUICK GUIDE                             │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+    Extension      Size        Portability    Browser    Example
+    ─────────────────────────────────────────────────────────────────────
+    .echo.scm      Any         High           Limited    calculator.echo.scm
+    .echo.glisp    Med-Large   Low            Full       web-api.echo.glisp
+    .echo.lisp     Med-Large   Medium         Medium     classes.echo.lisp
+    .echo.lsp      Small       Medium         Medium     utils.echo.lsp
+    .echo.ls       Very Small  Medium         Limited    init.echo.ls
+    .echo.s        Small       High           None       boot.echo.s
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                             LEARNING PATH                                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+    Beginner → Intermediate → Advanced → Maintainer
+        │            │            │            │
+        │            │            │            └─► MIGRATION_GUIDE.md
+        │            │            │                CONTRIBUTING.md
+        │            │            │
+        │            │            └─► DEVELOPMENT_STANDARDS.md
+        │            │                Advanced CODING_PATTERNS.md
+        │            │                examples/web-example.echo.glisp
+        │            │
+        │            └─► NAMING_PROTOCOLS.md
+        │                CODING_PATTERNS.md
+        │                examples/list-utils.echo.lsp
+        │
+        └─► STANDARDS_QUICK_REFERENCE.md
+            examples/hello-world.echo.scm
+            examples/calculator.echo.scm
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                          COMPLIANCE CHECKLIST                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+    For every new file:
+    ☐ Uses .echo. prefix in filename
+    ☐ Appropriate extension chosen (.scm, .glisp, .lisp, .lsp, .ls, .s)
+    ☐ File header with documentation block
+    ☐ Functions documented with purpose, args, returns, examples
+    ☐ Follows naming conventions (kebab-case, ?, !, ->)
+    ☐ Code follows style guide (2 space indent, 80-100 char lines)
+    ☐ Tests created (if applicable)
+    ☐ No secrets or sensitive data hardcoded
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                          QUICK START COMMANDS                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+    # Create new Scheme file
+    touch my-module.echo.scm
+    
+    # Create EchoLisp-specific file
+    touch web-api.echo.glisp
+    
+    # Run examples
+    (load "examples/hello-world.echo.scm")
+    (load "examples/calculator.echo.scm")
+    
+    # Find all echo files
+    find . -name "*.echo.*"
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                             KEY PRINCIPLES                                   │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+    1. CONSISTENCY    → Always use .echo. prefix
+    2. CLARITY        → Choose descriptive names
+    3. DOCUMENTATION  → Document all public APIs
+    4. TESTING        → Test your code
+    5. FUNCTIONAL     → Prefer immutability and pure functions
+    6. PORTABLE       → Use .echo.scm for standard Scheme
+    7. PRAGMATIC      → Use .echo.glisp for EchoLisp features
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                            GETTING HELP                                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+    Documentation:     See STANDARDS_INDEX.md
+    Quick Reference:   See STANDARDS_QUICK_REFERENCE.md
+    Migration:         See MIGRATION_GUIDE.md
+    Examples:          See examples/
+    Contributing:      See CONTRIBUTING.md
+    Issues:            Open a GitHub issue
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  "Clear protocols and patterns ensure repeatability across all use cases"   ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
